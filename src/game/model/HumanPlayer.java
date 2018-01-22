@@ -1,8 +1,8 @@
-package fp.GO;
+package game.model;
 
 import java.util.Scanner;
 
-import fp.GO.Board;
+import game.model.Board;
 
 public class HumanPlayer extends Player {
 

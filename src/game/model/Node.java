@@ -1,4 +1,4 @@
-package fp.GO;
+package game.model;
 
 public enum Node {
 	

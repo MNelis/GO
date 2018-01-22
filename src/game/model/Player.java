@@ -1,4 +1,4 @@
-package fp.GO;
+package game.model;
 
 public abstract class Player {
 	private String name;

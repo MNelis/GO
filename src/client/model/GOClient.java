@@ -2,13 +2,17 @@ package client.model;
 
 import java.io.*;
 import java.net.*;
+import general.Protocol.General;
+import general.Protocol.Server;
+import general.Protocol.Client;
 
 public class GOClient extends Thread {
-	private static final String USAGE = " usage : java week7 . cmdchat . Client <name > <address > <port >";
+	private static final String USAGE = "Usage : " + GOClient.class.getName() + " <name> <address>";
+	private static final String EXTENSIONS = "0$0$0$0$0$0$0";
 
 	/** Start een Client-applicatie op. */
 	public static void main(String[] args) {
-		if (args.length != 3) {
+		if (args.length != 2) {
 			System.out.println(USAGE);
 			System.exit(0);
 		}
@@ -17,25 +21,32 @@ public class GOClient extends Thread {
 		try {
 			host = InetAddress.getByName(args[1]);
 		} catch (UnknownHostException e) {
-			print(" ERROR : no valid hostname !");
+			print("ERROR: invalid hostname.");
 			System.exit(0);
 		}
 		try {
-			port = Integer.parseInt(args[2]);
+			port = General.DEFAULT_PORT;
 		} catch (NumberFormatException e) {
-			print(" ERROR : no valid portnummer !");
+			print("ERROR: invalid defeault portnumber.");
 			System.exit(0);
 		}
 		try {
 			GOClient client = new GOClient(args[0], host, port);
-			client.sendMessage(args[0]);
+			// first message to the server:
+			String initialMessage = Client.NAME + General.DELIMITER1 + args[0] + General.DELIMITER1 
+					+ Client.VERSION + General.DELIMITER1 + Client.VERSIONNO + General.DELIMITER1 
+					+ Client.EXTENSIONS + General.DELIMITER1 + EXTENSIONS;
+
+			client.sendMessage(initialMessage);
 			client.start();
+
+			// sends
 			do {
 				String input = readString("");
 				client.sendMessage(input);
 			} while (true);
 		} catch (IOException e) {
-			print(" ERROR : couldn ’t construct a client object !");
+			print("ERROR: couldn ’t construct a client object !");
 			System.exit(0);
 		}
 	}
@@ -52,11 +63,12 @@ public class GOClient extends Thread {
 		out = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream()));
 	}
 
+	// Reads, processes, and prints incoming messages
 	public void run() {
 		try {
 			String msg = in.readLine();
 			while (msg != null) {
-				print(msg);
+				print(processInput(msg));
 				msg = in.readLine();
 			}
 			shutdown();
@@ -65,9 +77,10 @@ public class GOClient extends Thread {
 		}
 	}
 
+	// Processes and sends messages to server.
 	public void sendMessage(String msg) {
 		try {
-			out.write(msg);
+			out.write(processOutput(msg));
 			out.newLine();
 			out.flush();
 		} catch (IOException e) {
@@ -76,16 +89,12 @@ public class GOClient extends Thread {
 	}
 
 	public void shutdown() {
-		print(" Closing socket connection ... ");
+		print("Closing socket connection.");
 		try {
 			sock.close();
 		} catch (IOException e) {
-			print(" ERROR : error closing the socket connection !");
+			print("ERROR: error closing the socket connection!");
 		}
-	}
-
-	public String getClientName() {
-		return clientName;
 	}
 
 	private static void print(String message) {
@@ -101,6 +110,61 @@ public class GOClient extends Thread {
 		} catch (IOException e) {
 		}
 		return (antw == null) ? "" : antw;
+	}
+
+	// processes input from server to something readable.
+	public String processInput(String msg) {
+		String[] splitMessage = msg.split("\\" + General.DELIMITER1);
+		switch (splitMessage[0]) {
+		case Server.CHAT:
+			return splitMessage[1] + ": " + (msg.replaceFirst("\\" + General.DELIMITER1, " ")).substring(2);
+		case Server.ENDGAME:
+			// gives message that the game has ended
+			return msg.replace(General.DELIMITER1, " ");
+		case Server.ERROR:
+			// gives an error message
+			return msg.replace(General.DELIMITER1, " ");
+		case Server.START:
+			if (splitMessage.length == 2) {
+
+				return "Entered a game with " + splitMessage[1] + " players. Set color and " + "boardsize: ("
+						+ Client.SETTINGS + " <color> <boardsize>)";
+			} else {
+				// TODO start game
+				startGame();
+				return msg.replace(General.DELIMITER1, " ");
+			}
+
+		case Server.TURN:
+			// gives turn to a player
+			return msg.replace(General.DELIMITER1, " ");
+		default:
+			return msg.replace(General.DELIMITER1, " ");
+		}
+
+	}
+
+	// processes input given by the client to propper format
+	public String processOutput(String msg) {
+		String[] splitMessage = msg.split(" ");
+		switch (splitMessage[0]) {
+		case Client.CHAT:
+			return msg.replaceFirst(" ", "\\" + General.DELIMITER1);
+		case Client.MOVE: // TODO specify move format
+			return ((msg.replaceFirst(" ", "\\" + General.DELIMITER1)).replaceFirst(" ", General.DELIMITER2))
+					.replace(" ", General.DELIMITER1);
+		default:
+			return msg.replace(" ", General.DELIMITER1);
+		}
+
+	}
+
+	public String getClientName() {
+		return clientName;
+	}
+	
+	public void startGame() {
+		print("Start GO!");
 	}
 
 }
