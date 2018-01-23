@@ -1,11 +1,16 @@
 package game.model;
 
+import java.util.List;
+import java.util.Vector;
+
+import general.Protocol.Client;
 import general.Protocol.General;
 import general.Protocol.Server;
 import server.model.GOClientHandler;
 import server.model.GOServer;
 
 public class GameHandler extends Thread {
+	private List<GOClientHandler> players;
 	private GOClientHandler p1;
 	private GOClientHandler p2;
 	private GOServer server;
@@ -18,6 +23,9 @@ public class GameHandler extends Thread {
 	public GameHandler(GOClientHandler p1, GOClientHandler p2, GOServer server) {
 		this.p1 = p1;
 		this.p2 = p2;
+		players = new Vector<GOClientHandler>();
+		players.add(this.p1);
+		players.add(this.p2);
 		this.server = server;
 	}
 
@@ -27,7 +35,7 @@ public class GameHandler extends Thread {
 		// p1.sendMessage("You entered a game with " + p2.getClientName() + ".");
 		// p2.sendMessage("You entered a game with " + p1.getClientName() + ".");
 		server.print("[" + p1.getClientName() + " and " + p2.getClientName() + " entered a game.]");
-
+		// TODO some message about the usage in-game.
 		p1.sendMessage(startMsg0);
 		try {
 			waitForInputs();
@@ -49,8 +57,7 @@ public class GameHandler extends Thread {
 		p2.sendMessage(startMsg2);
 
 		startGame();
-		p1.sendMessage("Nothing happens here yet.");
-		p2.sendMessage("Nothing happens here yet.");
+		broadcast("[Nothing happens here yet.]");
 	}
 
 	public void setSettings(String color, int DIM) {
@@ -58,8 +65,7 @@ public class GameHandler extends Thread {
 		colorP1 = color;
 		if (colorP1.equals(General.BLACK)) {
 			colorP2 = General.WHITE;
-		} 
-		else {
+		} else {
 			colorP2 = General.BLACK;
 		}
 		synchronized (this) {
@@ -67,33 +73,70 @@ public class GameHandler extends Thread {
 		}
 	}
 
+	public void broadcast(String msg) {
+		(new Vector<>(players)).forEach(player -> player.sendMessage(msg));
+	}
+
 	public void waitForInputs() throws InterruptedException {
 		synchronized (this) {
 			wait();
 		}
 	}
-	
+
 	public void startGame() {
-		server.print("Game will start here.");
+		// Node stone;
+		// if (colorP1.equals(General.BLACK)) {
+		// stone = Node.BLACK;
+		// }
+		// else {
+		// stone = Node.WHITE;
+		// }
+		// Player p1 = new HumanPlayer(this.p1.getClientName(), stone);
+		// Player p2 = new HumanPlayer(this.p2.getClientName(), stone.Other());
+		//
+		// (new Game(p1, p2, dim)).start();
+
+		server.print("[Game will start here.]");
 	}
-	
-	public void makeMove(GOClientHandler player) {
-		server.print("Stufff to handle a move will come here.");
+
+	public void makeMove(GOClientHandler player, String move) {
+		String[] splitMove = move.split(General.DELIMITER2);
+		if (splitMove[0].equals(Client.PASS)) {
+			broadcast(Server.TURN + General.DELIMITER1 + player.getClientName() + General.DELIMITER1 + Server.PASS
+					+ General.DELIMITER1 + other(player).getClientName());
+		} else if (splitMove[0].matches("\\d+") && splitMove[1].matches("\\d+")) {
+			broadcast(Server.TURN + General.DELIMITER1 + player.getClientName() + General.DELIMITER1 + move
+					+ General.DELIMITER1 + other(player).getClientName());
+		}
+
+		server.print("[Stufff to handle a move will come here.]");
 	}
-	
+
 	public void quit(GOClientHandler player) {
-		server.print("Stuff to handle a quit comes here.");
+		server.print("[Stuff to handle a quit comes here.]");
 	}
-	
-	public void sendChat(GOClientHandler player, String msg)	{
-		server.print("Stuff to handle a chat comes here.");
+
+	public void sendChat(GOClientHandler player, String msg) {
+		broadcast(Client.CHAT + General.DELIMITER1 + player.getClientName() + General.DELIMITER1 + msg);
 	}
-	
+
 	public void setTurn(GOClientHandler player) {
-		server.print("Stuff to set the current turn.");
+		server.print("[Stuff to set the current turn.]");
 	}
-	
-	public boolean currentTurn( GOClientHandler player) {
-		return turnP1;
+
+	public boolean currentTurn(GOClientHandler player) {
+		if (player.equals(p1)) {
+			return turnP1;
+		} else {
+			return !turnP1;
+		}
+	}
+
+	public GOClientHandler other(GOClientHandler player) {
+		if (p1.equals(player)) {
+			return p2;
+		} else {
+			return p1;
+		}
 	}
 }

@@ -2,13 +2,15 @@ package client.model;
 
 import java.io.*;
 import java.net.*;
+
+import game.model.*;
 import general.Protocol.General;
 import general.Protocol.Server;
 import general.Protocol.Client;
 
 public class GOClient extends Thread {
 	private static final String USAGE = "Usage : " + GOClient.class.getName() + " <name> <address>";
-	private static final String EXTENSIONS = "0$0$0$0$0$0$0";
+	private static final String EXTENSIONS = "1$0$0$0$0$0$0";
 
 	/** Start een Client-applicatie op. */
 	public static void main(String[] args) {
@@ -33,9 +35,9 @@ public class GOClient extends Thread {
 		try {
 			GOClient client = new GOClient(args[0], host, port);
 			// first message to the server:
-			String initialMessage = Client.NAME + General.DELIMITER1 + args[0] + General.DELIMITER1 
-					+ Client.VERSION + General.DELIMITER1 + Client.VERSIONNO + General.DELIMITER1 
-					+ Client.EXTENSIONS + General.DELIMITER1 + EXTENSIONS;
+			String initialMessage = Client.NAME + General.DELIMITER1 + args[0] + General.DELIMITER1 + Client.VERSION
+					+ General.DELIMITER1 + Client.VERSIONNO + General.DELIMITER1 + Client.EXTENSIONS
+					+ General.DELIMITER1 + EXTENSIONS;
 
 			client.sendMessage(initialMessage);
 			client.start();
@@ -55,6 +57,8 @@ public class GOClient extends Thread {
 	private Socket sock;
 	private BufferedReader in;
 	private BufferedWriter out;
+	private Board board;
+	private Node stone;
 
 	public GOClient(String name, InetAddress host, int port) throws IOException {
 		this.clientName = name;
@@ -117,27 +121,51 @@ public class GOClient extends Thread {
 		String[] splitMessage = msg.split("\\" + General.DELIMITER1);
 		switch (splitMessage[0]) {
 		case Server.CHAT:
-			return splitMessage[1] + ": " + (msg.replaceFirst("\\" + General.DELIMITER1, " ")).substring(2);
+			return splitMessage[1] + ": "
+					+ (msg.replaceFirst("\\" + General.DELIMITER1, " ")).substring(splitMessage[1].length() + 6);
+
 		case Server.ENDGAME:
 			// gives message that the game has ended
 			return msg.replace(General.DELIMITER1, " ");
+
 		case Server.ERROR:
 			// gives an error message
 			return msg.replace(General.DELIMITER1, " ");
+
 		case Server.START:
 			if (splitMessage.length == 2) {
-
 				return "Entered a game with " + splitMessage[1] + " players. Set color and " + "boardsize: ("
 						+ Client.SETTINGS + " <color> <boardsize>)";
 			} else {
-				// TODO start game
-				startGame();
-				return msg.replace(General.DELIMITER1, " ");
+				startGame(splitMessage[3]);
+				if (splitMessage[2].equals("BLACK")) {
+					stone = Node.BLACK;
+				} else {
+					stone = Node.WHITE;
+				}
+				return "A game has started between " + splitMessage[4] + " and " + splitMessage[5]
+						+ ". The boardsize is " + splitMessage[3] + "x" + splitMessage[3] + " and your color is "
+						+ splitMessage[2] + ".";
 			}
 
 		case Server.TURN:
-			// gives turn to a player
-			return msg.replace(General.DELIMITER1, " ");
+			int x;
+			int y;
+			// print(splitMessage[2] + " " + stone);
+			String[] splitMove = splitMessage[2].split(General.DELIMITER2);
+			if (!splitMove[0].equals(Client.PASS)) {
+				x = Integer.parseInt(splitMove[0]);
+				y = Integer.parseInt(splitMove[1]);
+				if (splitMessage[1].equals(clientName)) {
+					board.addStone(x, y, stone);
+				} else {
+					board.addStone(x, y, stone.Other());
+				}
+			}
+			print(board.toString());
+			return "[" + splitMessage[1] + " added a stone on (" + splitMove[0] + "," + splitMove[1] + ").] \n[It's "
+					+ splitMessage[3] + "'s turn now.]";
+
 		default:
 			return msg.replace(General.DELIMITER1, " ");
 		}
@@ -150,7 +178,7 @@ public class GOClient extends Thread {
 		switch (splitMessage[0]) {
 		case Client.CHAT:
 			return msg.replaceFirst(" ", "\\" + General.DELIMITER1);
-		case Client.MOVE: // TODO specify move format
+		case Client.MOVE:
 			return ((msg.replaceFirst(" ", "\\" + General.DELIMITER1)).replaceFirst(" ", General.DELIMITER2))
 					.replace(" ", General.DELIMITER1);
 		default:
@@ -162,9 +190,10 @@ public class GOClient extends Thread {
 	public String getClientName() {
 		return clientName;
 	}
-	
-	public void startGame() {
-		print("Start GO!");
+
+	public void startGame(String dim) {
+		board = new Board(Integer.parseInt(dim));
+		print(board.toString());
 	}
 
 }

@@ -56,6 +56,8 @@ public class GOClientHandler extends Thread {
 			disconnect();
 		} else {
 			server.broadcast("[" + clientName + " has entered the server.]");
+			sendMessage("[Welcome to this server.]");
+			// TODO add some message about the usage.
 			// server.print("[" + initialMessage + "]");
 		}
 	}
@@ -110,7 +112,7 @@ public class GOClientHandler extends Thread {
 		}
 	}
 
-	// Processes the input
+	// Processes the input from client
 	private void processInput(String input) {
 		String[] splitInput = input.split("\\" + General.DELIMITER1);
 		String result;
@@ -121,18 +123,22 @@ public class GOClientHandler extends Thread {
 				result = "Settings given.";
 				game.setSettings(splitInput[1], Integer.parseInt(splitInput[2]));
 				break;
-			case Client.MOVE:				
+
+			case Client.MOVE:
 				result = "Move.";
-				game.makeMove(this);
+				game.makeMove(this, splitInput[1]);
 				break;
+
 			case Client.QUIT:
 				result = "Quit.";
 				game.quit(this);
 				break;
+
 			case Client.CHAT:
-				game.sendChat(this, input);
+				game.sendChat(this, input.substring(5));
 				result = "Chat.";
 				break;
+
 			default:
 				result = "No clue what " + clientName + " wants.";
 			}
@@ -143,6 +149,7 @@ public class GOClientHandler extends Thread {
 				server.broadcast(input);
 				result = "Chat outside game.";
 				break;
+
 			default:
 				server.print(input);
 				result = "Unknown command outside game.";

@@ -34,11 +34,10 @@ public class GOServer {
 		try (ServerSocket serverSocket = new ServerSocket(port)) {
 			// print(InetAddress.getLocalHost().getHostAddress() + "\n" +
 			// InetAddress.getLocalHost().getHostName());
-			//int i = 0;
+			// int i = 0;
 			while (true) {
 				Socket sock = serverSocket.accept();
 				GOClientHandler handler = new GOClientHandler(this, sock);
-				//print("[Client no." + (++i) + " connected.] ");
 				handler.announce();
 				handler.start();
 				addHandler(handler);
@@ -60,7 +59,7 @@ public class GOServer {
 		}
 	}
 
-	// Prints message 
+	// Prints message
 	public void print(String message) {
 		System.out.println(message);
 	}
@@ -81,7 +80,7 @@ public class GOServer {
 		threads.remove(handler);
 	}
 
-	// Checks whether or not a given client name is in the list 'threads'.  
+	// Checks whether or not a given client name is in the list 'threads'.
 	public boolean containsClientName(String clientName) {
 		List<String> clientNames = new ArrayList<>();
 		threads.forEach((client) -> clientNames.add(client.getClientName()));

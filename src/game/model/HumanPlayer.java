@@ -22,6 +22,7 @@ public class HumanPlayer extends Player {
         return choice;
     }
 	
+	// TODO currently prints everything in console, might not be handy
 	private int[] readInt(String prompt) {
         int[] value = new int[3];
         boolean moveRead = false;
@@ -30,8 +31,9 @@ public class HumanPlayer extends Player {
         do {
             System.out.print(prompt);
             String line = scanner.nextLine();
+            System.out.println(line);
             String[] lineVector = line.split(" ");
-            if (lineVector.length < 3) {
+            if (lineVector.length < 3 && !lineVector[0].equals("CHAT")) {
             	try (Scanner lineScanner = new Scanner(line)) {
             		int i = 0;
             		while (lineScanner.hasNextInt() && i < 2) {
@@ -47,6 +49,9 @@ public class HumanPlayer extends Player {
             			moveRead = true;
             		}
             	}
+            }
+            else if (lineVector[0].equals("CHAT")) {
+            	moveRead = false;
             }
             else {
             	System.out.println("ERROR: to many input arguments.");
