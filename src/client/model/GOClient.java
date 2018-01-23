@@ -2,15 +2,10 @@ package client.model;
 
 import java.io.*;
 import java.net.*;
-
-import com.nedap.go.gui.GoGUIIntegrator;
-
-import client.viewer.ClientView;
-import client.viewer.GOClientTUI;
 import game.model.*;
-import general.Protocol.General;
-import general.Protocol.Server;
-import general.Protocol.Client;
+import client.viewer.*;
+import general.Protocol.*;
+import com.nedap.go.gui.GoGUIIntegrator;
 
 public class GOClient extends Thread {
 	private static final String USAGE = "Usage : " + GOClient.class.getName() + " <name> <address>";
@@ -42,7 +37,7 @@ public class GOClient extends Thread {
 			String initialMessage = Client.NAME + General.DELIMITER1 + args[0] + General.DELIMITER1 + Client.VERSION
 					+ General.DELIMITER1 + Client.VERSIONNO + General.DELIMITER1 + Client.EXTENSIONS
 					+ General.DELIMITER1 + EXTENSIONS;
-			
+
 			client.sendMessage(initialMessage);
 			client.start();
 			client.getTUI().start();
@@ -56,12 +51,12 @@ public class GOClient extends Thread {
 	private Socket sock;
 	private BufferedReader in;
 	private BufferedWriter out;
-
 	private GoGUIIntegrator goGUI;
 	private ClientView goTUI;
 	private Board board;
-	private Node stone;
+	private Stone stone;
 
+	/** Constructs new client with TUI. */
 	public GOClient(String name, InetAddress host, int port) throws IOException {
 		this.clientName = name;
 		sock = new Socket(host, port);
@@ -123,7 +118,7 @@ public class GOClient extends Thread {
 
 	//
 	/**
-	 * Processes input from server to something readable for the client.
+	 * Processes input from server to something readable for client.
 	 * 
 	 * @param msg
 	 *            message from the server.
@@ -146,14 +141,14 @@ public class GOClient extends Thread {
 
 		case Server.START:
 			if (splitMessage.length == 2) {
-				return "Entered a game with " + splitMessage[1] + " players. Set color and " + "boardsize: ("
-						+ Client.SETTINGS + " <color> <boardsize>)";
+				return "You entered a game for " + splitMessage[1] + " players. Set color and " + "boardsize: ("
+						+ Client.SETTINGS + " <BLACK or WHITE> <boardsize>)";
 			} else {
 				startGame(splitMessage[3]);
 				if (splitMessage[2].equals("BLACK")) {
-					stone = Node.BLACK;
+					stone = Stone.BLACK;
 				} else {
-					stone = Node.WHITE;
+					stone = Stone.WHITE;
 				}
 				return "A game has started between " + splitMessage[4] + " and " + splitMessage[5]
 						+ ". The boardsize is " + splitMessage[3] + "x" + splitMessage[3] + " and your color is "
@@ -172,17 +167,16 @@ public class GOClient extends Thread {
 				} else {
 					makeMove(x, y, stone.Other());
 				}
-				print(board.toString());
-				return "[" + splitMessage[1] + " added a stone on (" + splitMove[0] + "," + splitMove[1]
-						+ ").] \n[It's " + splitMessage[3] + "'s turn now.]";
+				// print(board.toString());
+				return "[" + splitMessage[1] + " added a stone on (" + splitMove[0] + "," + splitMove[1] + "). It's "
+						+ splitMessage[3] + "'s turn now.]";
 			} else {
-				return "[" + splitMessage[1] + " passes.]\n[It's " + splitMessage[3] + "'s turn now.]";
+				return "[" + splitMessage[1] + " passes. It's " + splitMessage[3] + "'s turn now.]";
 			}
 
 		default:
 			return msg.replace(General.DELIMITER1, " ");
 		}
-
 	}
 
 	/**
@@ -204,7 +198,6 @@ public class GOClient extends Thread {
 		default:
 			return msg.replace(" ", General.DELIMITER1);
 		}
-
 	}
 
 	/**
@@ -226,7 +219,7 @@ public class GOClient extends Thread {
 		goGUI.startGUI();
 		goGUI.setBoardSize(Integer.parseInt(dim));
 		board = new Board(Integer.parseInt(dim));
-		print(board.toString());
+		// print(board.toString());
 	}
 
 	/**
@@ -240,12 +233,13 @@ public class GOClient extends Thread {
 	 * @param stone
 	 *            color of the added stone.
 	 */
-	public void makeMove(int x, int y, Node stone) {
+	public void makeMove(int x, int y, Stone stone) {
 		// TODO currently only adds a stone. Must implement capture rules.
 		board.addStone(x, y, stone);
-		goGUI.addStone(y, x, (stone.equals(Node.WHITE)));
+		goGUI.addStone(y, x, (stone.equals(Stone.WHITE)));
 	}
 
+	/** Gets TUI. */
 	public ClientView getTUI() {
 		return goTUI;
 	}

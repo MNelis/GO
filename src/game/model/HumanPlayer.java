@@ -6,7 +6,7 @@ import game.model.Board;
 
 public class HumanPlayer extends Player {
 
-	public  HumanPlayer (String name, Node stone) {
+	public  HumanPlayer (String name, Stone stone) {
 		super(name, stone);
 	}
 	public int[] determineMove(Board board) {

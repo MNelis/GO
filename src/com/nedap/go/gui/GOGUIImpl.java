@@ -339,7 +339,7 @@ public class GOGUIImpl extends Application {
 
     protected void waitForInitializationLatch() {
         try {
-            System.out.println("Attempting init of the GOGUI!");
+            //System.out.println("Attempting init of the GOGUI!");
             if (!initializationLatch.await(30, TimeUnit.SECONDS)) {
                 System.out.println("Initialization of the GOGUI failed!");
             }

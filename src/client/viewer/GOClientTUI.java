@@ -18,7 +18,6 @@ public class GOClientTUI implements Observer, ClientView {
 
 	/** Starts the TUI, reads input written by the client on the TUI. */
 	public void start() {
-		print("Started TUI.");
 		do {
 			String input = readString("");
 			client.sendMessage(input);

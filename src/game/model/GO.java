@@ -5,7 +5,7 @@ public class GO {
 	public static void main(String[] args) {
 		// input <name p1> <name p2> <boardsize>
 		Player[] player = new Player[2];
-		Node[] stone = { Node.BLACK, Node.WHITE };
+		Stone[] stone = { Stone.BLACK, Stone.WHITE };
 
 		for (int i = 0; i < 2; i++) {
 			player[i] = new HumanPlayer(args[i], stone[i]);

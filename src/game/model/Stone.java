@@ -1,10 +1,10 @@
 package game.model;
 
-public enum Node {
+public enum Stone {
 	
 	EMPTY, BLACK, WHITE;
 	
-	public Node Other() {
+	public Stone Other() {
 		if (this == BLACK) {
             return WHITE;
         } else if (this == WHITE) {

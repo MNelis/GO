@@ -2,9 +2,9 @@ package game.model;
 
 public abstract class Player {
 	private String name;
-	private Node stone;
+	private Stone stone;
 	
-	public Player(String name, Node stone) {
+	public Player(String name, Stone stone) {
 		this.name = name;
 		this.stone = stone;
 	}
@@ -13,7 +13,7 @@ public abstract class Player {
 		return name;
 	}
 	
-	public Node getStone() {
+	public Stone getStone() {
 		return stone;
 	}
 	
