@@ -115,8 +115,7 @@ public class GOClientHandler extends Thread {
 	// Processes the input from client
 	private void processInput(String input) {
 		String[] splitInput = input.split("\\" + General.DELIMITER1);
-		String result;
-		server.print(splitInput[0] + " " + splitInput[1]);
+		String result;		
 		if (inGame) {
 			switch (splitInput[0]) {
 			case Client.SETTINGS:
