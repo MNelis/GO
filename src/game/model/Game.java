@@ -7,7 +7,7 @@ public class Game {
 	private int current;
 
 	public Game(Player s0, Player s1, int dim) {
-		board = new Board(dim);
+		board = new Board(dim, false);
 		players = new Player[NUMBER_PLAYERS];
 		players[0] = s0;
 		players[1] = s1;

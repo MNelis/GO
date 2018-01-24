@@ -116,39 +116,39 @@ public class ClientHandler extends Thread {
 		if (inGame) {
 			switch (splitInput[0]) {
 			case Client.SETTINGS:
-				result = "Settings given.";
+				result = "[CH: Settings given.]";
 				game.setSettings(splitInput[1], Integer.parseInt(splitInput[2]));
 				break;
 
 			case Client.MOVE:
-				result = "Move.";
+				result = "[CH: Move.]";
 				game.makeMove(this, splitInput[1]);
 				break;
 
 			case Client.QUIT:
-				result = "Quit.";
+				result = "[CH: Quit.]";
 				game.quit(this);
 				break;
 
 			case Client.CHAT:
 				game.sendChat(this, input.substring(5));
-				result = "Chat.";
+				result = "[CH: Chat.]";
 				break;
 
 			default:
-				result = "No clue what " + clientName + " wants.";
+				result = "[CH: No clue what " + clientName + " wants.]";
 			}
 			server.print(result);
 		} else {
 			switch (splitInput[0]) {
 			case Client.CHAT:
 				server.broadcast(input);
-				result = "Chat outside game.";
+				result = "[CH: Chat outside game.]";
 				break;
 
 			default:
 				server.print(input);
-				result = "Unknown command outside game.";
+				result = "[CH: Unknown command outside game.]";
 			}
 			server.print(result);
 		}

@@ -5,7 +5,6 @@ import java.net.*;
 import game.model.*;
 import client.viewer.*;
 import general.Protocol.*;
-import com.nedap.go.gui.GoGUIIntegrator;
 
 public class GOClient extends Thread {
 	private static final String USAGE = "Usage : " + GOClient.class.getName() + " <name> <address>";
@@ -51,7 +50,6 @@ public class GOClient extends Thread {
 	private Socket sock;
 	private BufferedReader in;
 	private BufferedWriter out;
-	private GoGUIIntegrator goGUI;
 	private ClientView goTUI;
 	private Board board;
 	private Stone stone;
@@ -214,11 +212,8 @@ public class GOClient extends Thread {
 	 * 
 	 * @param dim
 	 */
-	public void startGame(String dim) {
-		goGUI = new GoGUIIntegrator(false, true, Integer.parseInt(dim));
-		goGUI.startGUI();
-		goGUI.setBoardSize(Integer.parseInt(dim));
-		board = new Board(Integer.parseInt(dim));
+	public void startGame(String dim) {		
+		board = new Board(Integer.parseInt(dim), true);
 		// print(board.toString());
 	}
 
@@ -234,9 +229,7 @@ public class GOClient extends Thread {
 	 *            color of the added stone.
 	 */
 	public void makeMove(int x, int y, Stone stone) {
-		// TODO currently only adds a stone. Must implement capture rules.
 		board.addStone(x, y, stone);
-		goGUI.addStone(y, x, (stone.equals(Stone.WHITE)));
 	}
 
 	/** Gets TUI. */
