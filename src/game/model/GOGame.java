@@ -120,7 +120,7 @@ public class GOGame extends Thread {
 			board.increasePassCounter();
 
 		} else if (splitMove[0].matches("\\d+") && splitMove[1].matches("\\d+")) {
-			if (board.isValid(Integer.parseInt(splitMove[0]), Integer.parseInt(splitMove[1]))) {
+			if (board.isValid(Integer.parseInt(splitMove[0]), Integer.parseInt(splitMove[1]),colors[current])) {
 				broadcast(Server.TURN + General.DELIMITER1 + player.getClientName() + General.DELIMITER1 + move
 						+ General.DELIMITER1 + other(player).getClientName());
 				int x = Integer.parseInt(splitMove[0]);

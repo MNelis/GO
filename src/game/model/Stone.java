@@ -18,9 +18,9 @@ public enum Stone {
 		if (this == EMPTY) {
     		return "+";
     	} else if (this == BLACK) {
-    		return "BLACK";
+    		return "B";
     	} else {
-    		return "WHITE";
+    		return "W";
     	}
 	}
 

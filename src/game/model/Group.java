@@ -65,6 +65,10 @@ public class Group {
 	public List<Integer[]> getList() {
 		return stones;
 	}
+	
+	public void setList(List<Integer[]> list) {
+		stones = list;
+	}
 
 	/** Gets the color of the stones of group. */
 	public Stone getColor() {

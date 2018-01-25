@@ -1,6 +1,7 @@
 package game.model;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.nedap.go.gui.GoGUIIntegrator;
@@ -14,6 +15,7 @@ public class Board {
 	private GoGUIIntegrator goGUI;
 	private List<Group> groups = new ArrayList<>();
 	private List<Area> areas = new ArrayList<>();
+	private List<Board> history = new ArrayList<>();
 
 	/**
 	 * Initiates new square board with given dimension. Makes al fields empty.
@@ -37,13 +39,23 @@ public class Board {
 			goGUI = new GoGUIIntegrator(false, true, DIM);
 			goGUI.startGUI();
 			goGUI.setBoardSize(DIM);
+		} else if (enabledHistory) {
+			history.add(deepCopy());
 		}
 	}
 
 	/** Makes deep copy of the board. */
 	public Board deepCopy() {
 		Board copyBoard = new Board(DIM, false, false);
-		copyBoard.board = board.clone();
+		for (int i  = 0; i < DIM; i++) {
+			copyBoard.board[i] = Arrays.copyOf(board[i], board[i].length);
+		}
+		for (Group g: groups) {
+			Group copyGroup = new Group(copyBoard,g.getColor());
+			copyGroup.setList(g.getList());
+			copyBoard.groups.add(copyGroup);
+		}
+//		copyBoard.board = board.clone();
 		return copyBoard;
 	}
 
@@ -63,22 +75,38 @@ public class Board {
 	}
 
 	/** Checks if a node is on the board and empty. */
-	public boolean isValid(int x, int y) {
-		return (isNode(x, y) && isEmpty(x, y));
+	public boolean isValid(int x, int y, Stone stone) {
+		boolean koRule = koRule(x,y,stone);		
+		return (isNode(x, y) && isEmpty(x, y) && koRule);
 	}
-
-	private boolean isFull() {
-		boolean isFull = true;
-		for (int x = 0; x < DIM; x++) {
-			for (int y = 0; y < DIM; y++) {
-				if (isEmpty(x, y)) {
-					isFull = false;
-					break;
-				}
+	
+	public boolean koRule(int x, int y, Stone stone) {
+		boolean koRule = true;
+		Board copyBoard = deepCopy();
+		System.out.println(copyBoard.toString());
+		copyBoard.addStone(x, y, stone); // this doesnt work propperly
+		System.out.println(copyBoard.toString());
+		for (Board b: history) {
+			if (b.equals(copyBoard)) {
+				koRule = false;
+				break;
 			}
 		}
-		return isFull;
+		return koRule;
 	}
+
+//	private boolean isFull() {
+//		boolean isFull = true;
+//		for (int x = 0; x < DIM; x++) {
+//			for (int y = 0; y < DIM; y++) {
+//				if (isEmpty(x, y)) {
+//					isFull = false;
+//					break;
+//				}
+//			}
+//		}
+//		return isFull;
+//	}
 
 	/** Adds a stone on a node. */
 	public void addStone(int x, int y, Stone stone) {
@@ -88,6 +116,9 @@ public class Board {
 		}
 		updateGroups(x, y, stone);
 		checkCaptures(x, y, stone);
+		if (enabledHistory) {			
+			history.add(deepCopy());
+		}
 	}
 
 	/** Updates the groups on the board around the added stone. */
@@ -218,7 +249,7 @@ public class Board {
 
 	/** Checks if a node is on the board. */
 	public boolean gameOver() {
-		return (passCounter > 1 || isFull());
+		return (passCounter > 1);
 	}
 
 	/** Determines the scores of the players. */
@@ -296,6 +327,7 @@ public class Board {
 
 	}
 
+	@Override
 	public String toString() {
 		String s = "";
 		int currentX = 0;
@@ -310,5 +342,18 @@ public class Board {
 			}
 		}
 		return s;
+	}
+	
+	@Override
+	public boolean equals(Object board) {
+		boolean equal = true;
+		for (int x = 0; x < DIM; x++) {
+			for (int y = 0; y < DIM; y++) {
+				if (!((Board) board).getStone(x, y).equals(this.getStone(x, y))) {
+					equal = false;
+				}
+			}
+		}
+		return equal;
 	}
 }

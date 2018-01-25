@@ -15,11 +15,11 @@ public class HumanPlayer extends Player {
                 + ", enter coordinates(<x> <y>) or pass (enter PASS): ";
         int[] choice = readInt(prompt);
         
-        while (!((board.isValid(choice[0],choice[1]) && choice[2]==0) || choice[2] == -1 )) {
+//        while (!((board.isValid(choice[0],choice[1]) && choice[2]==0) || choice[2] == -1 )) {
             System.out.println("ERROR: field (" + choice[0] + "," + choice[1]
                     + ") is no valid choice.");
             choice = readInt(prompt);
-        }
+//        }
         return choice;
 		} else {
 			return null;

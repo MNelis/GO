@@ -192,7 +192,7 @@ public class GOClient extends Thread {
 			return msg.replaceFirst(" ", "\\" + General.DELIMITER1);
 		case Client.MOVE:
 			if (splitMessage[1].equals(Client.PASS)
-					|| board.isValid(Integer.parseInt(splitMessage[1]), Integer.parseInt(splitMessage[2]))) {
+					|| board.isValid(Integer.parseInt(splitMessage[1]), Integer.parseInt(splitMessage[2]), stone)) {
 				return ((msg.replaceFirst(" ", "\\" + General.DELIMITER1)).replaceFirst(" ", General.DELIMITER2))
 						.replace(" ", General.DELIMITER1);
 			} else {
@@ -220,7 +220,7 @@ public class GOClient extends Thread {
 	 * @param dim
 	 */
 	private void startGame(String dim) {
-		board = new Board(Integer.parseInt(dim), true, false);
+		board = new Board(Integer.parseInt(dim), true, true);
 		// print(board.toString());
 	}
 
