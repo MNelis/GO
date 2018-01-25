@@ -89,7 +89,7 @@ public class GOClient extends Thread {
 	}
 
 	// closes socket
-	public void shutdown() {
+	private void shutdown() {
 		print("Closing socket connection.");
 		try {
 			sock.close();
@@ -122,7 +122,7 @@ public class GOClient extends Thread {
 	 *            message from the server.
 	 * @return proccesed messege from the server.
 	 */
-	public String processInput(String msg) {
+	private String processInput(String msg) {
 		String[] splitMessage = msg.split("\\" + General.DELIMITER1);
 		switch (splitMessage[0]) {
 		case Server.CHAT:
@@ -139,7 +139,7 @@ public class GOClient extends Thread {
 
 		case Server.START:
 			if (splitMessage.length == 2) {
-				return "You entered a game for " + splitMessage[1] + " players. Set color and " + "boardsize: ("
+				return ">> You entered a game for " + splitMessage[1] + " players. Set your color and boardsize: ("
 						+ Client.SETTINGS + " <BLACK or WHITE> <boardsize>)";
 			} else {
 				startGame(splitMessage[3]);
@@ -148,9 +148,9 @@ public class GOClient extends Thread {
 				} else {
 					stone = Stone.WHITE;
 				}
-				return "A game has started between " + splitMessage[4] + " and " + splitMessage[5]
+				return "  [A game has started between " + splitMessage[4] + " and " + splitMessage[5]
 						+ ". The boardsize is " + splitMessage[3] + "x" + splitMessage[3] + " and your color is "
-						+ splitMessage[2] + ".";
+						+ splitMessage[2] + ".]";
 			}
 
 		case Server.TURN:
@@ -166,10 +166,10 @@ public class GOClient extends Thread {
 					makeMove(x, y, stone.Other());
 				}
 				// print(board.toString());
-				return "[" + splitMessage[1] + " added a stone on (" + splitMove[0] + "," + splitMove[1] + "). It's "
+				return "  [" + splitMessage[1] + " added a stone on (" + splitMove[0] + "," + splitMove[1] + "). It's "
 						+ splitMessage[3] + "'s turn now.]";
 			} else {
-				return "[" + splitMessage[1] + " passes. It's " + splitMessage[3] + "'s turn now.]";
+				return "  [" + splitMessage[1] + " passes. It's " + splitMessage[3] + "'s turn now.]";
 			}
 
 		default:
@@ -185,14 +185,21 @@ public class GOClient extends Thread {
 	 *            the message provided by the client.
 	 * @return a adjusted message.
 	 */
-	public String processOutput(String msg) {
+	private String processOutput(String msg) {
 		String[] splitMessage = msg.split(" ");
 		switch (splitMessage[0]) {
 		case Client.CHAT:
 			return msg.replaceFirst(" ", "\\" + General.DELIMITER1);
 		case Client.MOVE:
-			return ((msg.replaceFirst(" ", "\\" + General.DELIMITER1)).replaceFirst(" ", General.DELIMITER2))
-					.replace(" ", General.DELIMITER1);
+			if (splitMessage[1].equals(Client.PASS)
+					|| board.isValid(Integer.parseInt(splitMessage[1]), Integer.parseInt(splitMessage[2]))) {
+				return ((msg.replaceFirst(" ", "\\" + General.DELIMITER1)).replaceFirst(" ", General.DELIMITER2))
+						.replace(" ", General.DELIMITER1);
+			} else {
+				print("Invalid move, try something else.");
+				return "";
+			}
+
 		default:
 			return msg.replace(" ", General.DELIMITER1);
 		}
@@ -212,8 +219,8 @@ public class GOClient extends Thread {
 	 * 
 	 * @param dim
 	 */
-	public void startGame(String dim) {		
-		board = new Board(Integer.parseInt(dim), true);
+	private void startGame(String dim) {
+		board = new Board(Integer.parseInt(dim), true, false);
 		// print(board.toString());
 	}
 
@@ -228,12 +235,12 @@ public class GOClient extends Thread {
 	 * @param stone
 	 *            color of the added stone.
 	 */
-	public void makeMove(int x, int y, Stone stone) {
+	private void makeMove(int x, int y, Stone stone) {
 		board.addStone(x, y, stone);
 	}
 
 	/** Gets TUI. */
-	public ClientView getTUI() {
+	private ClientView getTUI() {
 		return goTUI;
 	}
 }

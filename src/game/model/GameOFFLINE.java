@@ -1,17 +1,19 @@
 package game.model;
 
-public class Game {
+public class GameOFFLINE {
 	public static final int NUMBER_PLAYERS = 2;
 	private Board board;
 	private Player[] players;
 	private int current;
-
-	public Game(Player s0, Player s1, int dim) {
-		board = new Board(dim, false);
+	private boolean offline; // necessary?
+	
+	public GameOFFLINE(Player s0, Player s1, int dim, boolean offline) {
+		board = new Board(dim, false, true);
 		players = new Player[NUMBER_PLAYERS];
 		players[0] = s0;
 		players[1] = s1;
 		current = 0;
+		this.offline = offline;
 	}
 
 	public void start() {
@@ -31,7 +33,7 @@ public class Game {
 	private void play() {
 		update();
 		while (!board.gameOver()) {
-			players[current].makeMove(board);
+			players[current].makeMove(board, offline);
 			update();
 			current = (current + 1) % 2;
 

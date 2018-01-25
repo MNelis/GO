@@ -9,7 +9,8 @@ public class HumanPlayer extends Player {
 	public  HumanPlayer (String name, Stone stone) {
 		super(name, stone);
 	}
-	public int[] determineMove(Board board) {
+	public int[] determineMove(Board board, boolean offline) {
+		if (offline) {
         String prompt = "> " + getName() + " (" + getStone().toString() + ")"
                 + ", enter coordinates(<x> <y>) or pass (enter PASS): ";
         int[] choice = readInt(prompt);
@@ -20,9 +21,13 @@ public class HumanPlayer extends Player {
             choice = readInt(prompt);
         }
         return choice;
+		} else {
+			return null;
+		}
     }
 	
 	// TODO currently prints everything in console, might not be handy
+	// 
 	private int[] readInt(String prompt) {
         int[] value = new int[3];
         boolean moveRead = false;

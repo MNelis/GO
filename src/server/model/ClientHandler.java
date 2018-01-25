@@ -3,7 +3,7 @@ package server.model;
 import java.io.*;
 import java.net.Socket;
 import general.Protocol.*;
-import game.model.GameHandler;
+import game.model.GOGame;
 
 public class ClientHandler extends Thread {
 	private static final String INCOMPATIBLEPROTOCOL = Server.ERROR + " " + Server.INCOMPATIBLEPROTOCOL + ": ";
@@ -16,8 +16,9 @@ public class ClientHandler extends Thread {
 	private String clientName;
 	private int clientVersion;
 	private String[] clientExtension;
-	private GameHandler game;
+	private GOGame game;
 	private boolean inGame = false;
+	private boolean currentTurn = false;
 
 	/** Constructs client handler. */
 	public ClientHandler(GOServer server, Socket sock) throws IOException {
@@ -50,8 +51,8 @@ public class ClientHandler extends Thread {
 					NAMETAKEN + " Name '" + clientName + "' already taken, please reconnect " + "with another name.");
 			disconnect();
 		} else {
-			server.broadcast("[" + clientName + " has entered the server.]");
-			sendMessage("[Welcome to this server, " + clientName + ".]");
+			server.broadcast("  [" + clientName + " has entered the server.]");
+			sendMessage("  [Welcome to this server, " + clientName + ".]");
 		}
 	}
 
@@ -66,6 +67,13 @@ public class ClientHandler extends Thread {
 			shutdown();
 		} catch (IOException e) {
 			shutdown();
+		}
+	}
+
+	/** Waits for input of the move. */
+	private void waitForInputs() throws InterruptedException {
+		synchronized (this) {
+			wait();
 		}
 	}
 
@@ -89,9 +97,19 @@ public class ClientHandler extends Thread {
 	 * Sets a game handler to the client handler (thus indirectly add client to game
 	 * handler).
 	 */
-	public void setGameHandler(GameHandler game) {
+	public void setGameHandler(GOGame game) {
 		this.game = game;
 		inGame = true;
+	}
+
+	/**
+	 * @throws InterruptedException
+	 */
+	public void makeMove() throws InterruptedException {
+		currentTurn = true;
+		sendMessage(">> Enter a move (MOVE <row> <column> or MOVE PASS):");
+		waitForInputs();
+		currentTurn = false;
 	}
 
 	/** Shutdown */
@@ -110,47 +128,47 @@ public class ClientHandler extends Thread {
 	}
 
 	/** Processes the input from client to server. */
+	// TODO do we want to log every action from all clients?
 	private void processInput(String input) {
 		String[] splitInput = input.split("\\" + General.DELIMITER1);
-		String result;
 		if (inGame) {
 			switch (splitInput[0]) {
-			case Client.SETTINGS:
-				result = "[CH: Settings given.]";
-				game.setSettings(splitInput[1], Integer.parseInt(splitInput[2]));
+			case Client.CHAT:
+				game.sendChat(this, input.substring(5));
 				break;
 
 			case Client.MOVE:
-				result = "[CH: Move.]";
-				game.makeMove(this, splitInput[1]);
+				// TODO check if valid move.
+				if (currentTurn) {
+					game.makeMove(this, splitInput[1]);
+					synchronized (this) {
+						notifyAll();
+					}
+				} else {
+					sendMessage("  [It's not your turn. You cannot make a move.]");
+				}
 				break;
 
 			case Client.QUIT:
-				result = "[CH: Quit.]";
 				game.quit(this);
 				break;
 
-			case Client.CHAT:
-				game.sendChat(this, input.substring(5));
-				result = "[CH: Chat.]";
+			case Client.SETTINGS:
+				// TODO check is player is authorizided to set settings.
+				game.setSettings(splitInput[1], Integer.parseInt(splitInput[2]));
 				break;
 
 			default:
-				result = "[CH: No clue what " + clientName + " wants.]";
 			}
-			server.print(result);
 		} else {
 			switch (splitInput[0]) {
 			case Client.CHAT:
 				server.broadcast(input);
-				result = "[CH: Chat outside game.]";
 				break;
 
 			default:
 				server.print(input);
-				result = "[CH: Unknown command outside game.]";
 			}
-			server.print(result);
 		}
 
 	}

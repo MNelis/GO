@@ -17,10 +17,10 @@ public abstract class Player {
 		return stone;
 	}
 	
-	public abstract int[] determineMove(Board board);
+	public abstract int[] determineMove(Board board, boolean offline);
 	
-	public void makeMove(Board board) {
-		int[] move = determineMove(board);
+	public void makeMove(Board board, boolean offline) {
+		int[] move = determineMove(board, offline);
 		if (move[2] == -1) {
 			board.increasePassCounter();
 		}

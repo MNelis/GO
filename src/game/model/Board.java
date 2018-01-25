@@ -1,7 +1,7 @@
 package game.model;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 
 import com.nedap.go.gui.GoGUIIntegrator;
 
@@ -10,9 +10,10 @@ public class Board {
 	private Stone[][] board;
 	private int passCounter;
 	private boolean enabledGUI;
+	boolean enabledHistory;
 	private GoGUIIntegrator goGUI;
-	private List<Group> groups = new Vector<>();;
-	private List<Area> areas = new Vector<>();
+	private List<Group> groups = new ArrayList<>();
+	private List<Area> areas = new ArrayList<>();
 
 	/**
 	 * Initiates new square board with given dimension. Makes al fields empty.
@@ -21,9 +22,10 @@ public class Board {
 	 *            dimension of the board
 	 */
 	// @requires dim > 0
-	public Board(int dim, boolean enableGUI) {
+	public Board(int dim, boolean enableGUI, boolean enableHistory) {
 		DIM = dim;
 		enabledGUI = enableGUI;
+		enabledHistory = enableHistory;
 		passCounter = 0;
 		board = new Stone[DIM][DIM];
 		for (int x = 0; x < DIM; x++) {
@@ -40,7 +42,7 @@ public class Board {
 
 	/** Makes deep copy of the board. */
 	public Board deepCopy() {
-		Board copyBoard = new Board(DIM, false);
+		Board copyBoard = new Board(DIM, false, false);
 		copyBoard.board = board.clone();
 		return copyBoard;
 	}
@@ -65,6 +67,19 @@ public class Board {
 		return (isNode(x, y) && isEmpty(x, y));
 	}
 
+	private boolean isFull() {
+		boolean isFull = true;
+		for (int x = 0; x < DIM; x++) {
+			for (int y = 0; y < DIM; y++) {
+				if (isEmpty(x, y)) {
+					isFull = false;
+					break;
+				}
+			}
+		}
+		return isFull;
+	}
+
 	/** Adds a stone on a node. */
 	public void addStone(int x, int y, Stone stone) {
 		board[x][y] = stone;
@@ -78,7 +93,7 @@ public class Board {
 	/** Updates the groups on the board around the added stone. */
 	public void updateGroups(int x, int y, Stone stone) {
 		Group addedTo = null;
-		List<Group> toRemove = new Vector<>();
+		List<Group> toRemove = new ArrayList<>();
 		Integer[][] neighborStones = { { x - 1, y }, { x + 1, y }, { x, y - 1 }, { x, y + 1 } };
 
 		for (Integer[] s : neighborStones) {
@@ -111,7 +126,7 @@ public class Board {
 	/** Checks if the added stone captures a group or is captured intself. */
 	public void checkCaptures(int x, int y, Stone stone) {
 		Integer[][] neighborStones = { { x - 1, y }, { x + 1, y }, { x, y - 1 }, { x, y + 1 } };
-		List<Group> toRemove = new Vector<>();
+		List<Group> toRemove = new ArrayList<>();
 		boolean capturesGroup = false;
 
 		// first checks
@@ -203,7 +218,7 @@ public class Board {
 
 	/** Checks if a node is on the board. */
 	public boolean gameOver() {
-		return (passCounter > 1);
+		return (passCounter > 1 || isFull());
 	}
 
 	/** Determines the scores of the players. */
@@ -247,7 +262,7 @@ public class Board {
 
 	public Area updateAreas(int x, int y) {
 		Area addedTo = null;
-		List<Area> toRemove = new Vector<>();
+		List<Area> toRemove = new ArrayList<>();
 		Integer[][] neighborNodes = { { x - 1, y }, { x, y - 1 } };
 
 		for (Integer[] s : neighborNodes) {

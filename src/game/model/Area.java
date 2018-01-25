@@ -34,18 +34,6 @@ public class Area {
 		}
 	}
 
-	// /** Gets the number of liberties of the group. */
-	// public int getLiberties() {
-	// List<Integer> libertiesList = new ArrayList<Integer>();
-	// nodes.forEach((node) -> libertiesList.add(board.getLiberties(node[0],
-	// node[1])));
-	// int sum = 0;
-	// for (int i : libertiesList) {
-	// sum += i;
-	// }
-	// return sum;
-	// }
-
 	/** Checks if the area contains a given node. */
 	public boolean containsNode(Integer[] node) {
 		boolean x = false;

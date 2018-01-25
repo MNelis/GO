@@ -3,7 +3,7 @@ package server.model;
 import java.net.*;
 import java.util.*;
 import java.io.IOException;
-import game.model.GameHandler;
+import game.model.GOGame;
 import general.Protocol.General;
 
 public class GOServer {
@@ -24,10 +24,10 @@ public class GOServer {
 
 	public GOServer(int port) {
 		this.port = port;
-		this.threads = new Vector<ClientHandler>();
+		this.threads = new ArrayList<ClientHandler>();
 	}
 
-	public void run() {
+	private void run() {
 		// try to open ServerSocket
 		try (ServerSocket serverSocket = new ServerSocket(port)) {
 			while (true) {
@@ -40,7 +40,7 @@ public class GOServer {
 				if (threads.size() > 1) {
 					ClientHandler p1 = threads.get(0);
 					ClientHandler p2 = threads.get(1);
-					GameHandler game = new GameHandler(p1, p2, this);
+					GOGame game = new GOGame(p1, p2, this);
 					p1.setGameHandler(game);
 					p2.setGameHandler(game);
 					removeHandler(p1);
@@ -66,7 +66,7 @@ public class GOServer {
 	}
 
 	/** Adds handler to list 'threads'. */
-	public void addHandler(ClientHandler handler) {
+	private void addHandler(ClientHandler handler) {
 		threads.add(handler);
 	}
 
