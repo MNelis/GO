@@ -1,6 +1,8 @@
 package server.model;
 
 import java.net.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.io.IOException;
 import game.model.GOGame;
@@ -12,6 +14,7 @@ public class GOServer {
 	private List<ClientHandler> lobby;
 	private List<ClientHandler> requestedGames;
 	private List<ClientHandler> inGame;
+	DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
 	/** Starts a Server-application. */
 	public static void main(String[] args) throws IOException {
@@ -32,18 +35,16 @@ public class GOServer {
 	}
 
 	private void run() {
-		// try to open ServerSocket
+
 		try (ServerSocket serverSocket = new ServerSocket(port)) {
+			print(ServerMessages.STARTSERVER);
 			while (true) {
 				Socket sock = serverSocket.accept();
 				ClientHandler handler = new ClientHandler(this, sock);
 				handler.announce();
 				handler.start();
+				print(ServerMessages.newClientMessage(handler.getClientName()));
 				addToLobby(handler);
-				// Creates game if there are enough clients.
-				// if (requestedGames.size() > 1) {
-				//
-				// }
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -51,14 +52,18 @@ public class GOServer {
 	}
 
 	/** Prints message. */
+	private String getDate() {
+		return "[" + dateFormat.format(new Date()) + "] ";
+	}
+
 	public void print(String message) {
-		System.out.println(message);
+		System.out.println(getDate() + message);
 	}
 
 	/** Sends message to every client in the list 'threads'. */
 	public void broadcast(String msg) {
-		// print(msg);
-		(new Vector<>(lobby)).forEach(handler -> handler.sendMessage(msg));
+		lobby.forEach(handler -> handler.sendMessage(msg));
+		requestedGames.forEach(handler -> handler.sendMessage(msg));
 	}
 
 	/** Adds handler to list 'threads'. */
@@ -94,7 +99,7 @@ public class GOServer {
 	private void checkEnoughPlayers() {
 		if (requestedGames.size() > 1) {
 			ClientHandler[] players = { requestedGames.get(0), requestedGames.get(1) };
-			// ClientHandler p2 = requestedGames.get(1);
+			print(ServerMessages.gameStartedMessage(players));
 			GOGame game = new GOGame(players[0], players[1], this);
 			for (ClientHandler p : players) {
 				p.setGame(game);

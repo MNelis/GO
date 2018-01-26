@@ -4,11 +4,10 @@ import java.io.*;
 import java.net.Socket;
 import general.Protocol.*;
 import game.model.GOGame;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ClientHandler extends Thread {
-	private static final String INCOMPATIBLEPROTOCOL = Server.ERROR + " " + Server.INCOMPATIBLEPROTOCOL + ": ";
-	private static final String NAMETAKEN = Server.ERROR + " " + Server.NAMETAKEN + ": ";
-
 	private GOServer server;
 	private Socket sock;
 	private BufferedReader in;
@@ -41,18 +40,19 @@ public class ClientHandler extends Thread {
 		}
 		// Checks if protocol versions are compatible and name not taken.
 		if (clientVersion != Server.VERSIONNO) {
-			server.print(INCOMPATIBLEPROTOCOL + "Server v." + Server.VERSIONNO + ", Client v." + clientVersion);
-			sendMessage(INCOMPATIBLEPROTOCOL + "Server v." + Server.VERSIONNO + ", Client v." + clientVersion
-					+ ". Please reconnect with protocol version " + Server.VERSIONNO);
+			// TODO message for server.
+			sendMessage(ServerMessages.incompatibleError(clientVersion));
 			disconnect();
 		} else if (server.containsClientName(clientName)) {
-			server.print(NAMETAKEN + clientName + " already taken.");
-			sendMessage(
-					NAMETAKEN + " Name '" + clientName + "' already taken, please reconnect " + "with another name.");
+			// TODO message for server.
+			sendMessage(ServerMessages.nameTakenError(clientName));
 			disconnect();
 		} else {
-			server.broadcast("  [" + clientName + " has entered the server.]");
-			sendMessage("  [Welcome to this server, " + clientName + ".]");
+			// TODO message for server.			
+			sendMessage(ServerMessages.welcomeMessage(clientName));
+			if (clientExtension[0].equals("1")) {
+				sendMessage(ServerMessages.CHATENABLEDMESSAGE);
+			}
 		}
 	}
 
@@ -123,7 +123,7 @@ public class ClientHandler extends Thread {
 		server.print("[" + clientName + " has left.]");
 	}
 
-	/** Disconnent */
+	/** Disconnect */
 	private void disconnect() {
 		try {
 			sock.close();
@@ -148,7 +148,7 @@ public class ClientHandler extends Thread {
 					game.makeMove(this, splitInput[1]);
 					notifier();
 				} else {
-					sendMessage("  [It's not your turn. You cannot make a move.]");
+					sendMessage(ServerMessages.NOTYOURTURN);
 				}
 				break;
 
@@ -158,11 +158,19 @@ public class ClientHandler extends Thread {
 				break;
 
 			case Client.SETTINGS:
-				// TODO check is player is authorizided to set settings.
-				game.setSettings(splitInput[1], Integer.parseInt(splitInput[2]));
+				List<String> colors = new ArrayList<String>();
+				colors.add(General.BLACK);
+				colors.add(General.WHITE);
+				if (splitInput.length == 3 && colors.contains(splitInput[1]) && splitInput[2].matches("\\d+")) {
+					game.setSettings(splitInput[1], Integer.parseInt(splitInput[2]));
+				} else {
+					sendMessage(ServerMessages.INVALIDSETTINGS);
+				}
+				
 				break;
 
 			default:
+				sendMessage(ServerMessages.UNKNOWNCOMMAND);
 			}
 		} else {
 			switch (splitInput[0]) {
@@ -171,13 +179,17 @@ public class ClientHandler extends Thread {
 				break;
 			case Client.REQUESTGAME:
 				server.addRequestedGame(this);
+				server.print(ServerMessages.newRequestMessage(clientName));
+				sendMessage(ServerMessages.REQUESTEDGAME);									
 				break;
 			case Client.QUIT:
 				server.removeRequestedGame(this);
 				server.addToLobby(this);
-				
+				server.print(ServerMessages.quitRequestMessage(clientName));
+				sendMessage(ServerMessages.QUITREQUEST);
+				break;
 			default:
-				server.print(input + " not recognized");
+				sendMessage(ServerMessages.UNKNOWNCOMMAND);
 			}
 		}
 

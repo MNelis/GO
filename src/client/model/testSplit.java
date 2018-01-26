@@ -9,11 +9,11 @@ public class testSplit {
 		
 		String msg = "abc dfs er fd ";
 		String msg2 = "asj$dskjhdsf$sajsd";
-		System.out.println(General.DELIMITER1);
-		System.out.println(msg.replace(" ", General.DELIMITER1));
+		System.out.print(msg);
+		System.out.print(msg.replace(" ", General.DELIMITER1));
 		System.out.println(msg2.split("\\" + General.DELIMITER1)[0]);
 				
-
+		
 	}
 
 }

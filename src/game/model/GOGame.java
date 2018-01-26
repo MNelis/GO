@@ -23,14 +23,14 @@ public class GOGame extends Thread {
 	public void initiate() {
 		String startMsg0 = Server.START + General.DELIMITER1 + NUMBEROFPLAYERS;
 		for (int i : new int[] { 0, 1 }) {
-			players[i].sendMessage("  [You entered a game with " + players[(i + 1) % 2].getClientName() + ".]");
+			players[i].sendMessage("  You entered a game with " + players[(i + 1) % 2].getClientName() + ".");
 		}
 
 		server.print("[" + players[0].getClientName() + " and " + players[1].getClientName() + " entered a game.]");
 		// TODO some message about the usage in-game.
 		players[0].sendMessage(startMsg0);
 		players[1].sendMessage(
-				"  [Waiting on the settings. These are determined by " + players[0].getClientName() + ".]");
+				"  Waiting on the settings. These are determined by " + players[0].getClientName() + ".");
 		try {
 			waitForInputs();
 		} catch (InterruptedException e) {
@@ -150,7 +150,7 @@ public class GOGame extends Thread {
 		// TODO find out it current player quits or the other
 		players[0].notifier();
 		players[1].notifier();
-		broadcast("  [" + player.getClientName() + " could not handle the pressure and gave up.]");
+		broadcast("  " + player.getClientName() + " could not handle the pressure and gave up.");
 		broadcast(Server.ENDGAME);
 	}
 

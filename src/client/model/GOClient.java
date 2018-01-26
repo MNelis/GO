@@ -8,7 +8,6 @@ import general.Protocol.*;
 
 public class GOClient extends Thread {
 	private static final String USAGE = "Usage : " + GOClient.class.getName() + " <name> <address>";
-	private static final String EXTENSIONS = "1$0$0$0$0$0$0";
 
 	/** Starts the client application. */
 	public static void main(String[] args) {
@@ -32,16 +31,11 @@ public class GOClient extends Thread {
 		}
 		try {
 			GOClient client = new GOClient(args[0], host, port);
-			// Initial fixed message from client to server.
-			String initialMessage = Client.NAME + General.DELIMITER1 + args[0] + General.DELIMITER1 + Client.VERSION
-					+ General.DELIMITER1 + Client.VERSIONNO + General.DELIMITER1 + Client.EXTENSIONS
-					+ General.DELIMITER1 + EXTENSIONS;
-
-			client.sendMessage(initialMessage);
+			client.sendMessage(ClientMessages.initMessage(args[0]));
 			client.start();
 			client.getTUI().start();
 		} catch (IOException e) {
-			System.err.println("ERROR: couldn ’t construct a client object !");
+			System.err.println("ERROR: couldn't construct a client object.");
 			System.exit(0);
 		}
 	}
@@ -90,11 +84,11 @@ public class GOClient extends Thread {
 
 	// closes socket
 	private void shutdown() {
-		print("Closing socket connection.");
+		print("  [Closing the socket connection.]" + General.COMMAND_END);
 		try {
 			sock.close();
 		} catch (IOException e) {
-			error("ERROR: error closing the socket connection!");
+			error("ERROR: error closing the socket connection." + General.COMMAND_END);
 		}
 	}
 
@@ -104,7 +98,7 @@ public class GOClient extends Thread {
 	}
 
 	private void error(String message) {
-		goTUI.error("ERROR " + message);
+		goTUI.error(message);
 	}
 
 	public static String readString(String tekst) {
@@ -124,7 +118,7 @@ public class GOClient extends Thread {
 	 * 
 	 * @param msg
 	 *            message from the server.
-	 * @return proccesed messege from the server.
+	 * @return processed message from the server.
 	 */
 	private String processInput(String msg) {
 		String[] splitMessage = msg.split("\\" + General.DELIMITER1);
@@ -172,7 +166,7 @@ public class GOClient extends Thread {
 	}
 
 	/**
-	 * Processes input given by the client to a propper format (to match the
+	 * Processes input given by the client to a correct format (to match the
 	 * protocol).
 	 * 
 	 * @param msg
@@ -185,12 +179,14 @@ public class GOClient extends Thread {
 		case Client.CHAT:
 			return msg.replaceFirst(" ", "\\" + General.DELIMITER1);
 		case Client.MOVE:
-			if (splitMessage[1].equals(Client.PASS)
-					|| board.isValid(Integer.parseInt(splitMessage[1]), Integer.parseInt(splitMessage[2]), stone)) {
+			if (splitMessage[1].equals(Client.PASS)) {
+				return msg.replace(" ", General.DELIMITER1);
+			} else if ((splitMessage[1].matches("\\d+") && splitMessage[2].matches("\\d+"))
+					&& board.isValid(Integer.parseInt(splitMessage[1]), Integer.parseInt(splitMessage[2]), stone)) {
 				return ((msg.replaceFirst(" ", "\\" + General.DELIMITER1)).replaceFirst(" ", General.DELIMITER2))
 						.replace(" ", General.DELIMITER1);
 			} else {
-				error("Invalid move, try something else.");
+				error(Server.ERROR + General.DELIMITER1 + Server.INVALID + General.DELIMITER1 + " Invalid move, try something else.");
 				return "";
 			}
 
@@ -215,7 +211,6 @@ public class GOClient extends Thread {
 	 */
 	private void startGame(String dim) {
 		board = new Board(Integer.parseInt(dim), true, true);
-		// print(board.toString());
 	}
 
 	/**
@@ -230,7 +225,6 @@ public class GOClient extends Thread {
 	 *            color of the added stone.
 	 */
 	private void makeMove(int x, int y, Stone stone) {
-		// print("(" + x + "," + y + "): " + stone.toString());
 		board.addStone(x, y, stone);
 	}
 

@@ -25,12 +25,12 @@ public class GOClientTUI implements Observer, ClientView {
 	}
 
 	/** Prints given message on the TUI. */
-	public void print(String msg) {
+	public synchronized void print(String msg) {
 		System.out.println(msg);
 	}
 
 	/** Prints given error message on the TUI. */
-	public void error(String msg) {
+	public synchronized void error(String msg) {
 		System.err.println(msg);
 	}
 
