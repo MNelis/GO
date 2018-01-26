@@ -18,6 +18,7 @@ public class Board {
 	private List<Group> groups;
 	private List<Area> areas;
 	private List<Board> history;
+	private boolean playerQuits = false;
 
 	/**
 	 * Initiates new square board with given dimension. Makes al fields empty.
@@ -264,7 +265,7 @@ public class Board {
 
 	/** Checks if a node is on the board. */
 	public boolean gameOver() {
-		return (passCounter > 1);
+		return (passCounter > 1 || playerQuits);
 	}
 
 	/** Determines the scores of the players. */
@@ -340,6 +341,10 @@ public class Board {
 			return addedTo;
 		}
 
+	}
+	
+	public void quitGame() {
+		playerQuits = true;
 	}
 
 	@Override

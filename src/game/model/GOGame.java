@@ -107,6 +107,8 @@ public class GOGame extends Thread {
 			broadcast("SCORES\n" + players[0].getClientName() + ":\t " + scores[1] + "\n" + players[1].getClientName()
 					+ ":\t " + scores[0]);
 		}
+		players[0].removeGame();
+		players[1].removeGame();
 	}
 
 	/** Currently: broadcasts a move made by a client in propper format. */
@@ -118,8 +120,7 @@ public class GOGame extends Thread {
 		} else {
 			color = colors[1];
 		}
-		
-		
+
 		if (splitMove[0].equals(Client.PASS)) {
 			broadcast(Server.TURN + General.DELIMITER1 + player.getClientName() + General.DELIMITER1 + Server.PASS
 					+ General.DELIMITER1 + other(player).getClientName());
@@ -127,7 +128,7 @@ public class GOGame extends Thread {
 			board.increasePassCounter();
 
 		} else if (splitMove[0].matches("\\d+") && splitMove[1].matches("\\d+")) {
-			if (board.isValid(Integer.parseInt(splitMove[0]), Integer.parseInt(splitMove[1]),color)) {
+			if (board.isValid(Integer.parseInt(splitMove[0]), Integer.parseInt(splitMove[1]), color)) {
 				broadcast(Server.TURN + General.DELIMITER1 + player.getClientName() + General.DELIMITER1 + move
 						+ General.DELIMITER1 + other(player).getClientName());
 				int x = Integer.parseInt(splitMove[0]);
@@ -145,8 +146,12 @@ public class GOGame extends Thread {
 
 	/** Handles a player who quits the game. */
 	public void quit(ClientHandler player) {
-		// TODO handle a client that quits.
-		server.print("[GH: Stuff to handle a quit comes here.]");
+		board.quitGame();
+		// TODO find out it current player quits or the other
+		players[0].notifier();
+		players[1].notifier();
+		broadcast("  [" + player.getClientName() + " could not handle the pressure and gave up.]");
+		broadcast(Server.ENDGAME);
 	}
 
 	/** Broadcasts chat message from given player to all the players in the game. */

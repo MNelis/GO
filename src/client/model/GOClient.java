@@ -94,13 +94,17 @@ public class GOClient extends Thread {
 		try {
 			sock.close();
 		} catch (IOException e) {
-			print("ERROR: error closing the socket connection!");
+			error("ERROR: error closing the socket connection!");
 		}
 	}
 
 	// prints on tui
 	private void print(String message) {
 		goTUI.print(message);
+	}
+
+	private void error(String message) {
+		goTUI.error("ERROR " + message);
 	}
 
 	public static String readString(String tekst) {
@@ -126,32 +130,26 @@ public class GOClient extends Thread {
 		String[] splitMessage = msg.split("\\" + General.DELIMITER1);
 		switch (splitMessage[0]) {
 		case Server.CHAT:
-			return splitMessage[1] + ": "
-					+ (msg.replaceFirst("\\" + General.DELIMITER1, " ")).substring(splitMessage[1].length() + 6);
+			return ClientMessages.chatMessage(msg);
 
 		case Server.ENDGAME:
-			// gives message that the game has ended
-			return msg.replace(General.DELIMITER1, " ");
+			board.quitGame();
+			return ClientMessages.endGameMessage(msg);
 
 		case Server.ERROR:
-			// gives an error message
-			return msg.replace(General.DELIMITER1, " ");
+			error(ClientMessages.errorMessage(msg));
+			return "";
 
 		case Server.START:
-			if (splitMessage.length == 2) {
-				return ">> You entered a game for " + splitMessage[1] + " players. Set your color and boardsize: ("
-						+ Client.SETTINGS + " <BLACK or WHITE> <boardsize>)";
-			} else {
+			if (!(splitMessage.length == 2)) {
 				startGame(splitMessage[3]);
-				if (splitMessage[2].equals("BLACK")) {
+				if (splitMessage[2].equals(General.BLACK)) {
 					stone = Stone.BLACK;
 				} else {
 					stone = Stone.WHITE;
 				}
-				return "  [A game has started between " + splitMessage[4] + " and " + splitMessage[5]
-						+ ". The boardsize is " + splitMessage[3] + "x" + splitMessage[3] + " and your color is "
-						+ splitMessage[2] + ".]";
 			}
+			return ClientMessages.startMessage(msg);
 
 		case Server.TURN:
 			int x;
@@ -165,12 +163,8 @@ public class GOClient extends Thread {
 				} else {
 					makeMove(x, y, stone.Other());
 				}
-				// print(board.toString());
-				return "  [" + splitMessage[1] + " added a stone on (" + splitMove[0] + "," + splitMove[1] + "). It's "
-						+ splitMessage[3] + "'s turn now.]";
-			} else {
-				return "  [" + splitMessage[1] + " passes. It's " + splitMessage[3] + "'s turn now.]";
 			}
+			return ClientMessages.turnMessage(msg, (splitMessage[3].equals(clientName)));
 
 		default:
 			return msg.replace(General.DELIMITER1, " ");
@@ -196,7 +190,7 @@ public class GOClient extends Thread {
 				return ((msg.replaceFirst(" ", "\\" + General.DELIMITER1)).replaceFirst(" ", General.DELIMITER2))
 						.replace(" ", General.DELIMITER1);
 			} else {
-				print("Invalid move, try something else.");
+				error("Invalid move, try something else.");
 				return "";
 			}
 
@@ -236,7 +230,7 @@ public class GOClient extends Thread {
 	 *            color of the added stone.
 	 */
 	private void makeMove(int x, int y, Stone stone) {
-//		print("(" + x + "," + y + "): " + stone.toString());
+		// print("(" + x + "," + y + "): " + stone.toString());
 		board.addStone(x, y, stone);
 	}
 

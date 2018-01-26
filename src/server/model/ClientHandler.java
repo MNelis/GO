@@ -97,9 +97,15 @@ public class ClientHandler extends Thread {
 	 * Sets a game handler to the client handler (thus indirectly add client to game
 	 * handler).
 	 */
-	public void setGameHandler(GOGame game) {
+	public void setGame(GOGame game) {
 		this.game = game;
 		inGame = true;
+	}
+	
+	public void removeGame() {
+		this.game = null;
+		inGame = false;
+		server.removeInGame(this);
 	}
 
 	/**
@@ -107,14 +113,13 @@ public class ClientHandler extends Thread {
 	 */
 	public void makeMove() throws InterruptedException {
 		currentTurn = true;
-		sendMessage(">> Enter a move (MOVE <row> <column> or MOVE PASS):");
 		waitForInputs();
 		currentTurn = false;
 	}
 
 	/** Shutdown */
 	private void shutdown() {
-		server.removeHandler(this);
+		server.removeFromLobby(this);
 		server.print("[" + clientName + " has left.]");
 	}
 
@@ -141,9 +146,7 @@ public class ClientHandler extends Thread {
 				// TODO check if valid move.
 				if (currentTurn) {
 					game.makeMove(this, splitInput[1]);
-					synchronized (this) {
-						notifyAll();
-					}
+					notifier();
 				} else {
 					sendMessage("  [It's not your turn. You cannot make a move.]");
 				}
@@ -151,6 +154,7 @@ public class ClientHandler extends Thread {
 
 			case Client.QUIT:
 				game.quit(this);
+				notifier();
 				break;
 
 			case Client.SETTINGS:
@@ -163,14 +167,26 @@ public class ClientHandler extends Thread {
 		} else {
 			switch (splitInput[0]) {
 			case Client.CHAT:
-				server.broadcast(input);
+				server.broadcast(Client.CHAT + General.DELIMITER1 + this.getClientName() + General.DELIMITER1 + input.substring(5));
 				break;
-
+			case Client.REQUESTGAME:
+				server.addRequestedGame(this);
+				break;
+			case Client.QUIT:
+				server.removeRequestedGame(this);
+				server.addToLobby(this);
+				
 			default:
-				server.print(input);
+				server.print(input + " not recognized");
 			}
 		}
 
+	}
+	
+	public void notifier() {
+		synchronized (this) {
+			notifyAll();
+		}
 	}
 
 }

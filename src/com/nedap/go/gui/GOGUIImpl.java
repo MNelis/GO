@@ -336,7 +336,7 @@ public class GOGUIImpl extends Application {
             }
         }.start();
     }
-
+    
     protected void waitForInitializationLatch() {
         try {
             //System.out.println("Attempting init of the GOGUI!");

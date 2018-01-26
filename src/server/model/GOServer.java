@@ -9,7 +9,9 @@ import general.Protocol.General;
 public class GOServer {
 	// private static final String USAGE = "Usage: " + GOServer.class.getName();
 	private int port;
-	private List<ClientHandler> threads;
+	private List<ClientHandler> lobby;
+	private List<ClientHandler> requestedGames;
+	private List<ClientHandler> inGame;
 
 	/** Starts a Server-application. */
 	public static void main(String[] args) throws IOException {
@@ -24,7 +26,9 @@ public class GOServer {
 
 	public GOServer(int port) {
 		this.port = port;
-		this.threads = new ArrayList<ClientHandler>();
+		lobby = new ArrayList<>();
+		requestedGames = new ArrayList<>();
+		inGame = new ArrayList<>();
 	}
 
 	private void run() {
@@ -35,19 +39,11 @@ public class GOServer {
 				ClientHandler handler = new ClientHandler(this, sock);
 				handler.announce();
 				handler.start();
-				addHandler(handler);
+				addToLobby(handler);
 				// Creates game if there are enough clients.
-				if (threads.size() > 1) {
-					ClientHandler p1 = threads.get(0);
-					ClientHandler p2 = threads.get(1);
-					GOGame game = new GOGame(p1, p2, this);
-					p1.setGameHandler(game);
-					p2.setGameHandler(game);
-					removeHandler(p1);
-					removeHandler(p2);
-					game.initiate();
-					game.start();
-				}
+				// if (requestedGames.size() > 1) {
+				//
+				// }
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -61,24 +57,61 @@ public class GOServer {
 
 	/** Sends message to every client in the list 'threads'. */
 	public void broadcast(String msg) {
-		print(msg);
-		(new Vector<>(threads)).forEach(handler -> handler.sendMessage(msg));
+		// print(msg);
+		(new Vector<>(lobby)).forEach(handler -> handler.sendMessage(msg));
 	}
 
 	/** Adds handler to list 'threads'. */
-	private void addHandler(ClientHandler handler) {
-		threads.add(handler);
+	public void addToLobby(ClientHandler handler) {
+		lobby.add(handler);
 	}
 
 	/** Removes handler from list 'threads'. */
-	public void removeHandler(ClientHandler handler) {
-		threads.remove(handler);
+	public void removeFromLobby(ClientHandler handler) {
+		lobby.remove(handler);
+	}
+
+	public void addRequestedGame(ClientHandler handler) {
+		requestedGames.add(handler);
+		removeFromLobby(handler);
+		checkEnoughPlayers();
+	}
+
+	public void removeRequestedGame(ClientHandler handler) {
+		requestedGames.remove(handler);
+	}
+
+	public void addInGame(ClientHandler handler) {
+		inGame.add(handler);
+		removeRequestedGame(handler);
+	}
+
+	public void removeInGame(ClientHandler handler) {
+		inGame.remove(handler);
+		lobby.add(handler);
+	}
+
+	private void checkEnoughPlayers() {
+		if (requestedGames.size() > 1) {
+			ClientHandler[] players = { requestedGames.get(0), requestedGames.get(1) };
+			// ClientHandler p2 = requestedGames.get(1);
+			GOGame game = new GOGame(players[0], players[1], this);
+			for (ClientHandler p : players) {
+				p.setGame(game);
+				addInGame(p);
+				removeRequestedGame(p);
+			}
+			game.initiate();
+			game.start();
+		}
 	}
 
 	/** Checks whether or not a given client name is in the list 'threads'. */
 	public boolean containsClientName(String clientName) {
 		List<String> clientNames = new ArrayList<>();
-		threads.forEach((client) -> clientNames.add(client.getClientName()));
+		lobby.forEach((client) -> clientNames.add(client.getClientName()));
+		requestedGames.forEach((client) -> clientNames.add(client.getClientName()));
+		inGame.forEach((client) -> clientNames.add(client.getClientName()));
 		return clientNames.contains(clientName);
 	}
 }
