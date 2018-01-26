@@ -2,7 +2,9 @@ package game.model;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Vector;
 
 import com.nedap.go.gui.GoGUIIntegrator;
 
@@ -11,11 +13,11 @@ public class Board {
 	private Stone[][] board;
 	private int passCounter;
 	private boolean enabledGUI;
-	boolean enabledHistory;
+	private boolean enabledHistory;
 	private GoGUIIntegrator goGUI;
-	private List<Group> groups = new ArrayList<>();
-	private List<Area> areas = new ArrayList<>();
-	private List<Board> history = new ArrayList<>();
+	private List<Group> groups;
+	private List<Area> areas;
+	private List<Board> history;
 
 	/**
 	 * Initiates new square board with given dimension. Makes al fields empty.
@@ -25,6 +27,10 @@ public class Board {
 	 */
 	// @requires dim > 0
 	public Board(int dim, boolean enableGUI, boolean enableHistory) {
+		groups = new Vector<>();
+		areas = new ArrayList<>();
+		history = new Vector<>();
+
 		DIM = dim;
 		enabledGUI = enableGUI;
 		enabledHistory = enableHistory;
@@ -47,15 +53,18 @@ public class Board {
 	/** Makes deep copy of the board. */
 	public Board deepCopy() {
 		Board copyBoard = new Board(DIM, false, false);
-		for (int i  = 0; i < DIM; i++) {
+		for (int i = 0; i < DIM; i++) {
 			copyBoard.board[i] = Arrays.copyOf(board[i], board[i].length);
 		}
-		for (Group g: groups) {
-			Group copyGroup = new Group(copyBoard,g.getColor());
-			copyGroup.setList(g.getList());
+		for (Group g : groups) {
+			Group copyGroup = new Group(copyBoard, g.getColor());
+			List<Integer[]> list = new ArrayList<>();
+			for (Integer[] item : g.getList()) {
+				list.add(Arrays.copyOf(item, item.length));
+			}
+			copyGroup.setList(list);
 			copyBoard.groups.add(copyGroup);
 		}
-//		copyBoard.board = board.clone();
 		return copyBoard;
 	}
 
@@ -76,17 +85,19 @@ public class Board {
 
 	/** Checks if a node is on the board and empty. */
 	public boolean isValid(int x, int y, Stone stone) {
-		boolean koRule = koRule(x,y,stone);		
-		return (isNode(x, y) && isEmpty(x, y) && koRule);
+		if (enabledHistory) {
+			return (isNode(x, y) && isEmpty(x, y) && !isFull() && koRule(x, y, stone));
+		} else {
+			return (isNode(x, y) && isEmpty(x, y) && !isFull());
+		}
+
 	}
-	
+
 	public boolean koRule(int x, int y, Stone stone) {
 		boolean koRule = true;
 		Board copyBoard = deepCopy();
-		System.out.println(copyBoard.toString());
-		copyBoard.addStone(x, y, stone); // this doesnt work propperly
-		System.out.println(copyBoard.toString());
-		for (Board b: history) {
+		copyBoard.addStone(x, y, stone);
+		for (Board b : history) {
 			if (b.equals(copyBoard)) {
 				koRule = false;
 				break;
@@ -95,18 +106,18 @@ public class Board {
 		return koRule;
 	}
 
-//	private boolean isFull() {
-//		boolean isFull = true;
-//		for (int x = 0; x < DIM; x++) {
-//			for (int y = 0; y < DIM; y++) {
-//				if (isEmpty(x, y)) {
-//					isFull = false;
-//					break;
-//				}
-//			}
-//		}
-//		return isFull;
-//	}
+	private boolean isFull() {
+		boolean isFull = true;
+		for (int x = 0; x < DIM; x++) {
+			for (int y = 0; y < DIM; y++) {
+				if (isEmpty(x, y)) {
+					isFull = false;
+					break;
+				}
+			}
+		}
+		return isFull;
+	}
 
 	/** Adds a stone on a node. */
 	public void addStone(int x, int y, Stone stone) {
@@ -116,7 +127,7 @@ public class Board {
 		}
 		updateGroups(x, y, stone);
 		checkCaptures(x, y, stone);
-		if (enabledHistory) {			
+		if (enabledHistory) {
 			history.add(deepCopy());
 		}
 	}
@@ -157,33 +168,37 @@ public class Board {
 	/** Checks if the added stone captures a group or is captured intself. */
 	public void checkCaptures(int x, int y, Stone stone) {
 		Integer[][] neighborStones = { { x - 1, y }, { x + 1, y }, { x, y - 1 }, { x, y + 1 } };
-		List<Group> toRemove = new ArrayList<>();
+		// List<Group> toRemove = new ArrayList<>();
 		boolean capturesGroup = false;
 
 		// first checks
 		for (Integer[] s : neighborStones) {
 			if (isNode(s[0], s[1]) && getStone(s[0], s[1]) == stone.Other()) {
-				for (Group g : groups) {
-					if (g.containsStone(s) && g.getLiberties() == 0) {
+				Iterator<Group> g = groups.iterator();
+				while (g.hasNext()) {
+					Group group = g.next();
+					if (group.containsStone(s) && group.getLiberties() == 0) {
+						// System.out.println("capture");
 						capturesGroup = true;
-						removeGroup(g);
-						toRemove.add(g);
+						removeGroup(group);
+						group.emptyList();
 						break;
 					}
 				}
 			}
 		}
 		if (!capturesGroup) {
-			for (Group g : groups) {
-				if (g.containsStone(x, y) && g.getLiberties() == 0) {
-					removeGroup(g);
-					toRemove.add(g);
+			Iterator<Group> g = groups.iterator();
+			while (g.hasNext()) {
+				Group group = g.next();
+				if (group.containsStone(x, y) && group.getLiberties() == 0) {
+					// System.out.println("suicide");
+					removeGroup(group);
+					group.emptyList();
 					break;
 				}
 			}
 		}
-		toRemove.forEach((group) -> group.emptyList());
-		toRemove.forEach((group) -> removeGroup(group));
 	}
 
 	/** Removes a stone from a node. */
@@ -343,7 +358,7 @@ public class Board {
 		}
 		return s;
 	}
-	
+
 	@Override
 	public boolean equals(Object board) {
 		boolean equal = true;

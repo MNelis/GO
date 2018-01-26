@@ -89,7 +89,6 @@ public class GOGame extends Thread {
 	 */
 	private void startGame() throws InterruptedException {
 		board = new Board(dim, true, true);
-		// TODO start game here.
 		server.print("[GH: Game starts here.]");
 		play();
 	}
@@ -113,6 +112,14 @@ public class GOGame extends Thread {
 	/** Currently: broadcasts a move made by a client in propper format. */
 	public void makeMove(ClientHandler player, String move) {
 		String[] splitMove = move.split(General.DELIMITER2);
+		Stone color;
+		if (player.equals(players[0])) {
+			color = colors[0];
+		} else {
+			color = colors[1];
+		}
+		
+		
 		if (splitMove[0].equals(Client.PASS)) {
 			broadcast(Server.TURN + General.DELIMITER1 + player.getClientName() + General.DELIMITER1 + Server.PASS
 					+ General.DELIMITER1 + other(player).getClientName());
@@ -120,12 +127,13 @@ public class GOGame extends Thread {
 			board.increasePassCounter();
 
 		} else if (splitMove[0].matches("\\d+") && splitMove[1].matches("\\d+")) {
-			if (board.isValid(Integer.parseInt(splitMove[0]), Integer.parseInt(splitMove[1]),colors[current])) {
+			if (board.isValid(Integer.parseInt(splitMove[0]), Integer.parseInt(splitMove[1]),color)) {
 				broadcast(Server.TURN + General.DELIMITER1 + player.getClientName() + General.DELIMITER1 + move
 						+ General.DELIMITER1 + other(player).getClientName());
 				int x = Integer.parseInt(splitMove[0]);
 				int y = Integer.parseInt(splitMove[1]);
-				board.addStone(x, y, colors[current]);
+				board.addStone(x, y, color);
+				board.resetPassCounter();
 			} else {
 				player.sendMessage("  [GH: invalid move.]");
 			}

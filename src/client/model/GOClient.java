@@ -226,7 +226,7 @@ public class GOClient extends Thread {
 
 	/**
 	 * Updates the board and GUI. A stone is added and there may be some stones
-	 * removed due to a capture. *
+	 * removed due to a capture.
 	 * 
 	 * @param x
 	 *            row of the added stone.
@@ -236,6 +236,7 @@ public class GOClient extends Thread {
 	 *            color of the added stone.
 	 */
 	private void makeMove(int x, int y, Stone stone) {
+//		print("(" + x + "," + y + "): " + stone.toString());
 		board.addStone(x, y, stone);
 	}
 
