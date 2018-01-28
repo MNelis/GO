@@ -84,11 +84,11 @@ public class GOClient extends Thread {
 
 	// closes socket
 	private void shutdown() {
-		print("  [Closing the socket connection.]" + General.COMMAND_END);
+		print("  Closing the socket connection.");
 		try {
 			sock.close();
 		} catch (IOException e) {
-			error("ERROR: error closing the socket connection." + General.COMMAND_END);
+			error("ERROR: error closing the socket connection.");
 		}
 	}
 
@@ -127,6 +127,7 @@ public class GOClient extends Thread {
 			return ClientMessages.chatMessage(msg);
 
 		case Server.ENDGAME:
+			board.determineScores();
 			board.quitGame();
 			return ClientMessages.endGameMessage(msg);
 

@@ -177,10 +177,10 @@ public class ClientHandler extends Thread {
 			case Client.CHAT:
 				server.broadcast(Client.CHAT + General.DELIMITER1 + this.getClientName() + General.DELIMITER1 + input.substring(5));
 				break;
-			case Client.REQUESTGAME:
-				server.addRequestedGame(this);
+			case Client.REQUESTGAME:				
 				server.print(ServerMessages.newRequestMessage(clientName));
-				sendMessage(ServerMessages.REQUESTEDGAME);									
+				sendMessage(ServerMessages.REQUESTEDGAME);	
+				server.addRequestedGame(this);
 				break;
 			case Client.QUIT:
 				server.removeRequestedGame(this);

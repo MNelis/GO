@@ -296,6 +296,9 @@ public class Board {
 		}
 		for (Area a : areas) {
 			if (a.getStoneArea()) {
+				for(Integer[] i: a.getList()){
+					goGUI.addAreaIndicator(i[1], i[0], a.getStone().equals(Stone.WHITE));
+				}
 				if (a.getStone().equals(Stone.BLACK)) {
 					scoreBLACK += a.length();
 				} else {
