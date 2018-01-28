@@ -15,7 +15,7 @@ public class Area {
 
 	/** Adds a node to the area. */
 	public void addNode(int x, int y) {
-		nodes.add(new Integer[] { x, y });
+		nodes.add(new Integer[]{x, y});
 	}
 
 	/** Empties the area. */
@@ -23,7 +23,7 @@ public class Area {
 		nodes.removeAll(nodes);
 	}
 
-	/** Merges another area with this area */
+	/** Merges another area with this area. */
 	public void joinArea(Area area) {
 		List<Integer[]> list = area.getList();
 		list.forEach((node) -> nodes.add(node));
@@ -47,7 +47,7 @@ public class Area {
 
 	/** Checks if the area contains a given node. */
 	public boolean containsNode(int x, int y) {
-		return (containsNode(new Integer[] { x, y }));
+		return containsNode(new Integer[]{x, y});
 	}
 
 	/** Gets list of node in area. */
@@ -65,16 +65,16 @@ public class Area {
 		return stone;
 	}
 
-	/** Sets the area to an stone */
+	/** Sets the area to an stone. */
 	public void setStoneArea(boolean bool) {
 		this.stoneArea = bool;
 	}
 
-	/** Gets the area to an stone */
+	/** Gets the area to an stone. */
 	public boolean getStoneArea() {
 		return this.stoneArea;
 	}
-	
+
 	public int length() {
 		return nodes.size();
 	}

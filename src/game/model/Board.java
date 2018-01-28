@@ -5,11 +5,10 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
-
 import com.nedap.go.gui.GoGUIIntegrator;
 
 public class Board {
-	public static int DIM;
+	public static int dimension;
 	private Stone[][] board;
 	private int passCounter;
 	private boolean enabledGUI;
@@ -20,32 +19,29 @@ public class Board {
 	private List<Board> history;
 	private boolean playerQuits = false;
 
-	/**
-	 * Initiates new square board with given dimension. Makes al fields empty.
+	/** Initiates new square board with given dimension. Makes al fields empty.
 	 * 
-	 * @param dim
-	 *            dimension of the board
-	 */
+	 * @param dim dimension of the board */
 	// @requires dim > 0
 	public Board(int dim, boolean enableGUI, boolean enableHistory) {
 		groups = new Vector<>();
 		areas = new ArrayList<>();
 		history = new Vector<>();
 
-		DIM = dim;
+		dimension = dim;
 		enabledGUI = enableGUI;
 		enabledHistory = enableHistory;
 		passCounter = 0;
-		board = new Stone[DIM][DIM];
-		for (int x = 0; x < DIM; x++) {
-			for (int y = 0; y < DIM; y++) {
+		board = new Stone[dimension][dimension];
+		for (int x = 0; x < dimension; x++) {
+			for (int y = 0; y < dimension; y++) {
 				board[x][y] = Stone.EMPTY;
 			}
 		}
 		if (enabledGUI) {
-			goGUI = new GoGUIIntegrator(false, true, DIM);
+			goGUI = new GoGUIIntegrator(false, true, dimension);
 			goGUI.startGUI();
-			goGUI.setBoardSize(DIM);
+			goGUI.setBoardSize(dimension);
 		} else if (enabledHistory) {
 			history.add(deepCopy());
 		}
@@ -53,8 +49,8 @@ public class Board {
 
 	/** Makes deep copy of the board. */
 	public Board deepCopy() {
-		Board copyBoard = new Board(DIM, false, false);
-		for (int i = 0; i < DIM; i++) {
+		Board copyBoard = new Board(dimension, false, false);
+		for (int i = 0; i < dimension; i++) {
 			copyBoard.board[i] = Arrays.copyOf(board[i], board[i].length);
 		}
 		for (Group g : groups) {
@@ -71,25 +67,25 @@ public class Board {
 
 	/** Checks if a node is on the board. */
 	public boolean isNode(int x, int y) {
-		return (0 <= x && x < DIM) && (0 <= y && y < DIM);
+		return (0 <= x && x < dimension) && (0 <= y && y < dimension);
 	}
 
-	/** Gets the stone of a given node */
+	/** Gets the stone of a given node. */
 	public Stone getStone(int x, int y) {
 		return board[x][y];
 	}
 
 	/** Checks if a node is empty. */
 	public boolean isEmpty(int x, int y) {
-		return (board[x][y] == Stone.EMPTY);
+		return board[x][y] == Stone.EMPTY;
 	}
 
 	/** Checks if a node is on the board and empty. */
 	public boolean isValid(int x, int y, Stone stone) {
 		if (enabledHistory) {
-			return (isNode(x, y) && isEmpty(x, y) && !isFull() && koRule(x, y, stone));
+			return isNode(x, y) && isEmpty(x, y) && !isFull() && koRule(x, y, stone);
 		} else {
-			return (isNode(x, y) && isEmpty(x, y) && !isFull());
+			return isNode(x, y) && isEmpty(x, y) && !isFull();
 		}
 
 	}
@@ -109,8 +105,8 @@ public class Board {
 
 	private boolean isFull() {
 		boolean isFull = true;
-		for (int x = 0; x < DIM; x++) {
-			for (int y = 0; y < DIM; y++) {
+		for (int x = 0; x < dimension; x++) {
+			for (int y = 0; y < dimension; y++) {
 				if (isEmpty(x, y)) {
 					isFull = false;
 					break;
@@ -124,7 +120,7 @@ public class Board {
 	public void addStone(int x, int y, Stone stone) {
 		board[x][y] = stone;
 		if (enabledGUI) {
-			goGUI.addStone(y, x, (stone.equals(Stone.WHITE)));
+			goGUI.addStone(y, x, stone.equals(Stone.WHITE));
 		}
 		updateGroups(x, y, stone);
 		checkCaptures(x, y, stone);
@@ -137,7 +133,7 @@ public class Board {
 	public void updateGroups(int x, int y, Stone stone) {
 		Group addedTo = null;
 		List<Group> toRemove = new ArrayList<>();
-		Integer[][] neighborStones = { { x - 1, y }, { x + 1, y }, { x, y - 1 }, { x, y + 1 } };
+		Integer[][] neighborStones = {{x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1}};
 
 		for (Integer[] s : neighborStones) {
 			if (isNode(s[0], s[1]) && getStone(s[0], s[1]) == stone) {
@@ -168,13 +164,13 @@ public class Board {
 
 	/** Checks if the added stone captures a group or is captured intself. */
 	public void checkCaptures(int x, int y, Stone stone) {
-		Integer[][] neighborStones = { { x - 1, y }, { x + 1, y }, { x, y - 1 }, { x, y + 1 } };
+		Integer[][] neighborStones = {{x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1}};
 		// List<Group> toRemove = new ArrayList<>();
 		boolean capturesGroup = false;
 
 		// first checks
 		for (Integer[] s : neighborStones) {
-			if (isNode(s[0], s[1]) && getStone(s[0], s[1]) == stone.Other()) {
+			if (isNode(s[0], s[1]) && getStone(s[0], s[1]) == stone.other()) {
 				Iterator<Group> g = groups.iterator();
 				while (g.hasNext()) {
 					Group group = g.next();
@@ -220,10 +216,10 @@ public class Board {
 		groups.remove(group);
 	}
 
-	/** Gets the numebr of liberties of a stone on a given location */
+	/** Gets the number of liberties of a stone on a given location. */
 	public int getLiberties(int x, int y) {
 		int numberOfLiberties = 0;
-		Integer[][] neighborStones = { { x - 1, y }, { x + 1, y }, { x, y - 1 }, { x, y + 1 } };
+		Integer[][] neighborStones = {{x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1}};
 		if (isNode(x, y) && isEmpty(x, y)) {
 			numberOfLiberties = -1;
 		} else {
@@ -238,17 +234,15 @@ public class Board {
 
 	/** Resets the board, makes all nodes empty. */
 	public void reset() {
-		for (int x = 0; x < DIM; x++) {
-			for (int y = 0; y < DIM; y++) {
+		for (int x = 0; x < dimension; x++) {
+			for (int y = 0; y < dimension; y++) {
 				removeStone(x, y);
 			}
 		}
 	}
 
-	/**
-	 * Increases a counter which keeps track of the number of consecutive
-	 * PASS-moves.
-	 */
+	/** Increases a counter which keeps track of the number of consecutive
+	 * PASS-moves. */
 	public void increasePassCounter() {
 		passCounter++;
 	}
@@ -265,24 +259,25 @@ public class Board {
 
 	/** Checks if a node is on the board. */
 	public boolean gameOver() {
-		return (passCounter > 1 || playerQuits);
+		return passCounter > 1 || playerQuits;
 	}
 
 	/** Determines the scores of the players. */
 	public int[] determineScores() {
 		int scoreBLACK = 0;
 		int scoreWHITE = 0;
-		for (int x = 0; x < DIM; x++) {
-			for (int y = 0; y < DIM; y++) {
+		for (int x = 0; x < dimension; x++) {
+			for (int y = 0; y < dimension; y++) {
 				if (isEmpty(x, y)) {
 					Area area = updateAreas(x, y);
-					Integer[][] neighborStones = { { x - 1, y }, { x + 1, y }, { x, y - 1 }, { x, y + 1 } };
+					Integer[][] neighborStones = {{x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1}};
 					for (Integer[] s : neighborStones) {
 						if (isNode(s[0], s[1]) && !isEmpty(s[0], s[1])) {
 							if (!area.getStoneArea() && area.getStone().equals(Stone.EMPTY)) {
 								area.setStoneArea(true);
 								area.setStone(getStone(s[0], s[1]));
-							} else if (area.getStoneArea() && !area.getStone().equals(getStone(s[0], s[1]))) {
+							} else if (area.getStoneArea()
+									&& !area.getStone().equals(getStone(s[0], s[1]))) {
 								area.setStoneArea(false);
 							}
 						}
@@ -296,7 +291,7 @@ public class Board {
 		}
 		for (Area a : areas) {
 			if (a.getStoneArea()) {
-				for(Integer[] i: a.getList()){
+				for (Integer[] i : a.getList()) {
 					goGUI.addAreaIndicator(i[1], i[0], a.getStone().equals(Stone.WHITE));
 				}
 				if (a.getStone().equals(Stone.BLACK)) {
@@ -307,13 +302,13 @@ public class Board {
 			}
 		}
 		areas.removeAll(areas);
-		return new int[] { scoreBLACK, scoreWHITE };
+		return new int[]{scoreBLACK, scoreWHITE};
 	}
 
 	public Area updateAreas(int x, int y) {
 		Area addedTo = null;
 		List<Area> toRemove = new ArrayList<>();
-		Integer[][] neighborNodes = { { x - 1, y }, { x, y - 1 } };
+		Integer[][] neighborNodes = {{x - 1, y}, {x, y - 1}};
 
 		for (Integer[] s : neighborNodes) {
 			if (isNode(s[0], s[1]) && getStone(s[0], s[1]) == Stone.EMPTY) {
@@ -345,7 +340,7 @@ public class Board {
 		}
 
 	}
-	
+
 	public void quitGame() {
 		playerQuits = true;
 	}
@@ -354,8 +349,8 @@ public class Board {
 	public String toString() {
 		String s = "";
 		int currentX = 0;
-		for (int x = 0; x < DIM; x++) {
-			for (int y = 0; y < DIM; y++) {
+		for (int x = 0; x < dimension; x++) {
+			for (int y = 0; y < dimension; y++) {
 				if (currentX == x) {
 					s = s + getStone(x, y) + " ";
 				} else {
@@ -368,11 +363,11 @@ public class Board {
 	}
 
 	@Override
-	public boolean equals(Object board) {
+	public boolean equals(Object b) {
 		boolean equal = true;
-		for (int x = 0; x < DIM; x++) {
-			for (int y = 0; y < DIM; y++) {
-				if (!((Board) board).getStone(x, y).equals(this.getStone(x, y))) {
+		for (int x = 0; x < dimension; x++) {
+			for (int y = 0; y < dimension; y++) {
+				if (!((Board) b).getStone(x, y).equals(this.getStone(x, y))) {
 					equal = false;
 				}
 			}

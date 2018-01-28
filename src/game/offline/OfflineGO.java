@@ -1,12 +1,14 @@
-package game.model;
+package game.offline;
 
+import game.model.Stone;
 import game.players.ComputerPlayer;
 import game.players.HumanPlayer;
 import game.players.NaiveStrategy;
 import game.players.Player;
 
 public class OfflineGO {
-	final static String USAGE = "USAGE: " + OfflineGO.class.getName() + " <name p0> <name p1> <board size>";
+	final static String USAGE = "USAGE: " + OfflineGO.class.getName()
+			+ " <name p0> <name p1> <board size>";
 
 	public static void main(String[] args) {
 		// input <name p1> <name p2> <board size>
@@ -18,16 +20,14 @@ public class OfflineGO {
 			for (int i = 0; i < 2; i++) {
 				if (args[i].equals("-N")) {
 					player[i] = new ComputerPlayer(stone[i], new NaiveStrategy());
-				}
-				else {
+				} else {
 					player[i] = new HumanPlayer(args[i], stone[i]);
 				}
 
 			}
 			int dim = Integer.parseInt(args[2]);
 			(new OfflineGOGame(player[0], player[1], dim)).start();
-		}
-		else {
+		} else {
 			System.err.println(USAGE);
 		}
 

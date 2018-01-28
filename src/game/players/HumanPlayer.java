@@ -1,7 +1,6 @@
 package game.players;
 
 import java.util.Scanner;
-
 import game.model.Board;
 import game.model.Stone;
 
@@ -17,8 +16,10 @@ public class HumanPlayer extends Player {
 				+ ", enter coordinates(<row> <column>) or pass (enter PASS): ";
 		Integer[] choice = readInt(prompt);
 
-		while (!((board.isValid(choice[0], choice[1], getStone()) && choice[2] == 0) || choice[2] == -1)) {
-			System.err.println("ERROR: field (" + choice[0] + "," + choice[1] + ") is no valid choice.");
+		while (!((board.isValid(choice[0], choice[1], getStone()) && choice[2] == 0)
+				|| choice[2] == -1)) {
+			System.err.println(
+					"ERROR: field (" + choice[0] + "," + choice[1] + ") is no valid choice.");
 			choice = readInt(prompt);
 		}
 		return choice;
@@ -46,18 +47,15 @@ public class HumanPlayer extends Player {
 					if (i == 0 && lineScanner.hasNext() && lineScanner.next().equals("PASS")) {
 						value[2] = -1;
 						moveRead = true;
-					}
-					else if (i == 2) {
+					} else if (i == 2) {
 						value[2] = 0;
 						moveRead = true;
 					}
 				}
-			}
-			else {
+			} else {
 				System.err.println("ERROR: invalid input");
 			}
-		}
-		while (!moveRead);
+		} while (!moveRead);
 		return value;
 	}
 

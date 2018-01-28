@@ -1,11 +1,17 @@
 package server.model;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.Socket;
-import general.Protocol.*;
-import game.model.GOGame;
 import java.util.ArrayList;
 import java.util.List;
+import game.online.GOGame;
+import general.Protocol.Client;
+import general.Protocol.General;
+import general.Protocol.Server;
 
 public class ClientHandler extends Thread {
 	private GOServer server;
@@ -48,7 +54,7 @@ public class ClientHandler extends Thread {
 			sendMessage(ServerMessages.nameTakenError(clientName));
 			disconnect();
 		} else {
-			// TODO message for server.			
+			// TODO message for server.
 			sendMessage(ServerMessages.welcomeMessage(clientName));
 			if (clientExtension[0].equals("1")) {
 				sendMessage(ServerMessages.CHATENABLEDMESSAGE);
@@ -77,7 +83,7 @@ public class ClientHandler extends Thread {
 		}
 	}
 
-	/** Sends message to client */
+	/** Sends message to client. */
 	public void sendMessage(String msg) {
 		try {
 			out.write(msg);
@@ -88,42 +94,38 @@ public class ClientHandler extends Thread {
 		}
 	}
 
-	/** Gets name of client */
+	/** Gets name of client. */
 	public String getClientName() {
 		return clientName;
 	}
 
-	/**
-	 * Sets a game handler to the client handler (thus indirectly add client to game
-	 * handler).
-	 */
+	/** Sets a game handler to the client handler (thus indirectly add client to
+	 * game handler). */
 	public void setGame(GOGame game) {
 		this.game = game;
 		inGame = true;
 	}
-	
+
 	public void removeGame() {
 		this.game = null;
 		inGame = false;
 		server.removeInGame(this);
 	}
 
-	/**
-	 * @throws InterruptedException
-	 */
+	/** @throws InterruptedException */
 	public void makeMove() throws InterruptedException {
 		currentTurn = true;
 		waitForInputs();
 		currentTurn = false;
 	}
 
-	/** Shutdown */
+	/** Shutdown. */
 	private void shutdown() {
 		server.removeFromLobby(this);
 		server.print("[" + clientName + " has left.]");
 	}
 
-	/** Disconnect */
+	/** Disconnect. */
 	private void disconnect() {
 		try {
 			sock.close();
@@ -138,63 +140,65 @@ public class ClientHandler extends Thread {
 		String[] splitInput = input.split("\\" + General.DELIMITER1);
 		if (inGame) {
 			switch (splitInput[0]) {
-			case Client.CHAT:
-				game.sendChat(this, input.substring(5));
-				break;
+				case Client.CHAT:
+					game.sendChat(this, input.substring(5));
+					break;
 
-			case Client.MOVE:
-				// TODO check if valid move.
-				if (currentTurn) {
-					game.makeMove(this, splitInput[1]);
+				case Client.MOVE:
+					// TODO check if valid move.
+					if (currentTurn) {
+						game.makeMove(this, splitInput[1]);
+						notifier();
+					} else {
+						sendMessage(ServerMessages.NOTYOURTURN);
+					}
+					break;
+
+				case Client.QUIT:
+					game.quit(this);
 					notifier();
-				} else {
-					sendMessage(ServerMessages.NOTYOURTURN);
-				}
-				break;
+					break;
 
-			case Client.QUIT:
-				game.quit(this);
-				notifier();
-				break;
+				case Client.SETTINGS:
+					List<String> colors = new ArrayList<String>();
+					colors.add(General.BLACK);
+					colors.add(General.WHITE);
+					if (splitInput.length == 3 && colors.contains(splitInput[1])
+							&& splitInput[2].matches("\\d+")) {
+						game.setSettings(splitInput[1], Integer.parseInt(splitInput[2]));
+					} else {
+						sendMessage(ServerMessages.INVALIDSETTINGS);
+					}
 
-			case Client.SETTINGS:
-				List<String> colors = new ArrayList<String>();
-				colors.add(General.BLACK);
-				colors.add(General.WHITE);
-				if (splitInput.length == 3 && colors.contains(splitInput[1]) && splitInput[2].matches("\\d+")) {
-					game.setSettings(splitInput[1], Integer.parseInt(splitInput[2]));
-				} else {
-					sendMessage(ServerMessages.INVALIDSETTINGS);
-				}
-				
-				break;
+					break;
 
-			default:
-				sendMessage(ServerMessages.UNKNOWNCOMMAND);
+				default:
+					sendMessage(ServerMessages.UNKNOWNCOMMAND);
 			}
 		} else {
 			switch (splitInput[0]) {
-			case Client.CHAT:
-				server.broadcast(Client.CHAT + General.DELIMITER1 + this.getClientName() + General.DELIMITER1 + input.substring(5));
-				break;
-			case Client.REQUESTGAME:				
-				server.print(ServerMessages.newRequestMessage(clientName));
-				sendMessage(ServerMessages.REQUESTEDGAME);	
-				server.addRequestedGame(this);
-				break;
-			case Client.QUIT:
-				server.removeRequestedGame(this);
-				server.addToLobby(this);
-				server.print(ServerMessages.quitRequestMessage(clientName));
-				sendMessage(ServerMessages.QUITREQUEST);
-				break;
-			default:
-				sendMessage(ServerMessages.UNKNOWNCOMMAND);
+				case Client.CHAT:
+					server.broadcast(Client.CHAT + General.DELIMITER1 + this.getClientName()
+							+ General.DELIMITER1 + input.substring(5));
+					break;
+				case Client.REQUESTGAME:
+					server.print(ServerMessages.newRequestMessage(clientName));
+					sendMessage(ServerMessages.REQUESTEDGAME);
+					server.addRequestedGame(this);
+					break;
+				case Client.QUIT:
+					server.removeRequestedGame(this);
+					server.addToLobby(this);
+					server.print(ServerMessages.quitRequestMessage(clientName));
+					sendMessage(ServerMessages.QUITREQUEST);
+					break;
+				default:
+					sendMessage(ServerMessages.UNKNOWNCOMMAND);
 			}
 		}
 
 	}
-	
+
 	public void notifier() {
 		synchronized (this) {
 			notifyAll();

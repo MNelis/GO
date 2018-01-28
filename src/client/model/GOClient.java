@@ -1,10 +1,20 @@
 package client.model;
 
-import java.io.*;
-import java.net.*;
-import game.model.*;
-import client.viewer.*;
-import general.Protocol.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import client.viewer.ClientView;
+import client.viewer.GOClientTUI;
+import game.model.Board;
+import game.model.Stone;
+import general.Protocol.Client;
+import general.Protocol.General;
+import general.Protocol.Server;
 
 public class GOClient extends Thread {
 	private static final String USAGE = "Usage : " + GOClient.class.getName() + " <name> <address>";
@@ -113,120 +123,108 @@ public class GOClient extends Thread {
 	}
 
 	//
-	/**
-	 * Processes input from server to something readable for client.
+	/** Processes input from server to something readable for client.
 	 * 
-	 * @param msg
-	 *            message from the server.
-	 * @return processed message from the server.
-	 */
+	 * @param msg message from the server.
+	 * @return processed message from the server. */
 	private String processInput(String msg) {
 		String[] splitMessage = msg.split("\\" + General.DELIMITER1);
 		switch (splitMessage[0]) {
-		case Server.CHAT:
-			return ClientMessages.chatMessage(msg);
+			case Server.CHAT:
+				return ClientMessages.chatMessage(msg);
 
-		case Server.ENDGAME:
-			board.determineScores();
-			board.quitGame();
-			return ClientMessages.endGameMessage(msg);
+			case Server.ENDGAME:
+				board.determineScores();
+				board.quitGame();
+				return ClientMessages.endGameMessage(msg);
 
-		case Server.ERROR:
-			error(ClientMessages.errorMessage(msg));
-			return "";
+			case Server.ERROR:
+				error(ClientMessages.errorMessage(msg));
+				return "";
 
-		case Server.START:
-			if (!(splitMessage.length == 2)) {
-				startGame(splitMessage[3]);
-				if (splitMessage[2].equals(General.BLACK)) {
-					stone = Stone.BLACK;
-				} else {
-					stone = Stone.WHITE;
+			case Server.START:
+				if (!(splitMessage.length == 2)) {
+					startGame(splitMessage[3]);
+					if (splitMessage[2].equals(General.BLACK)) {
+						stone = Stone.BLACK;
+					} else {
+						stone = Stone.WHITE;
+					}
 				}
-			}
-			return ClientMessages.startMessage(msg);
+				return ClientMessages.startMessage(msg);
 
-		case Server.TURN:
-			int x;
-			int y;
-			String[] splitMove = splitMessage[2].split(General.DELIMITER2);
-			if (!splitMove[0].equals(Client.PASS)) {
-				x = Integer.parseInt(splitMove[0]);
-				y = Integer.parseInt(splitMove[1]);
-				if (splitMessage[1].equals(clientName)) {
-					makeMove(x, y, stone);
-				} else {
-					makeMove(x, y, stone.Other());
+			case Server.TURN:
+				int x;
+				int y;
+				String[] splitMove = splitMessage[2].split(General.DELIMITER2);
+				if (!splitMove[0].equals(Client.PASS)) {
+					x = Integer.parseInt(splitMove[0]);
+					y = Integer.parseInt(splitMove[1]);
+					if (splitMessage[1].equals(clientName)) {
+						makeMove(x, y, stone);
+					} else {
+						makeMove(x, y, stone.other());
+					}
 				}
-			}
-			return ClientMessages.turnMessage(msg, (splitMessage[3].equals(clientName)));
+				return ClientMessages.turnMessage(msg, splitMessage[3].equals(clientName));
 
-		default:
-			return msg.replace(General.DELIMITER1, " ");
+			default:
+				return msg.replace(General.DELIMITER1, " ");
 		}
 	}
 
-	/**
-	 * Processes input given by the client to a correct format (to match the
+	/** Processes input given by the client to a correct format (to match the
 	 * protocol).
 	 * 
-	 * @param msg
-	 *            the message provided by the client.
-	 * @return a adjusted message.
-	 */
+	 * @param msg the message provided by the client.
+	 * @return a adjusted message. */
 	private String processOutput(String msg) {
 		String[] splitMessage = msg.split(" ");
 		switch (splitMessage[0]) {
-		case Client.CHAT:
-			return msg.replaceFirst(" ", "\\" + General.DELIMITER1);
-		case Client.MOVE:
-			if (splitMessage[1].equals(Client.PASS)) {
-				return msg.replace(" ", General.DELIMITER1);
-			} else if ((splitMessage[1].matches("\\d+") && splitMessage[2].matches("\\d+"))
-					&& board.isValid(Integer.parseInt(splitMessage[1]), Integer.parseInt(splitMessage[2]), stone)) {
-				return ((msg.replaceFirst(" ", "\\" + General.DELIMITER1)).replaceFirst(" ", General.DELIMITER2))
-						.replace(" ", General.DELIMITER1);
-			} else {
-				error(Server.ERROR + General.DELIMITER1 + Server.INVALID + General.DELIMITER1 + " Invalid move, try something else.");
-				return "";
-			}
+			case Client.CHAT:
+				return msg.replaceFirst(" ", "\\" + General.DELIMITER1);
+			case Client.MOVE:
+				if (splitMessage[1].equals(Client.PASS)) {
+					return msg.replace(" ", General.DELIMITER1);
+				} else if ((splitMessage[1].matches("\\d+") && splitMessage[2].matches("\\d+"))
+						&& board.isValid(Integer.parseInt(splitMessage[1]),
+								Integer.parseInt(splitMessage[2]), stone)) {
+					return ((msg.replaceFirst(" ", "\\" + General.DELIMITER1)).replaceFirst(" ",
+							General.DELIMITER2)).replace(" ", General.DELIMITER1);
+				} else {
+					error(Server.ERROR + General.DELIMITER1 + Server.INVALID + General.DELIMITER1
+							+ " Invalid move, try something else.");
+					return "";
+				}
 
-		default:
-			return msg.replace(" ", General.DELIMITER1);
+			default:
+				return msg.replace(" ", General.DELIMITER1);
 		}
 	}
 
-	/**
-	 * Gets name of the client.
+	/** Gets name of the client.
 	 * 
-	 * @return clientName.
-	 */
+	 * @return clientName. */
 	public String getClientName() {
 		return clientName;
 	}
 
-	/**
-	 * Initializes a board and GUI. Here the current state of the game is displayed.
+	/** Initializes a board and GUI. Here the current state of the game is
+	 * displayed.
 	 * 
-	 * @param dim
-	 */
+	 * @param dim */
 	private void startGame(String dim) {
 		board = new Board(Integer.parseInt(dim), true, true);
 	}
 
-	/**
-	 * Updates the board and GUI. A stone is added and there may be some stones
+	/** Updates the board and GUI. A stone is added and there may be some stones
 	 * removed due to a capture.
 	 * 
-	 * @param x
-	 *            row of the added stone.
-	 * @param y
-	 *            column of the added stone.
-	 * @param stone
-	 *            color of the added stone.
-	 */
-	private void makeMove(int x, int y, Stone stone) {
-		board.addStone(x, y, stone);
+	 * @param x row of the added stone.
+	 * @param y column of the added stone.
+	 * @param color color of the added stone. */
+	private void makeMove(int x, int y, Stone color) {
+		board.addStone(x, y, color);
 	}
 
 	/** Gets TUI. */

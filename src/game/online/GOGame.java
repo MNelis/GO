@@ -1,7 +1,12 @@
-package game.model;
+package game.online;
 
-import server.model.*;
-import general.Protocol.*;
+import game.model.Board;
+import game.model.Stone;
+import general.Protocol.Client;
+import general.Protocol.General;
+import general.Protocol.Server;
+import server.model.ClientHandler;
+import server.model.GOServer;
 
 public class GOGame extends Thread {
 	private static final int NUMBEROFPLAYERS = 2;
@@ -22,15 +27,17 @@ public class GOGame extends Thread {
 	/** Initiates game, acquires settings from first player. */
 	public void initiate() {
 		String startMsg0 = Server.START + General.DELIMITER1 + NUMBEROFPLAYERS;
-		for (int i : new int[] { 0, 1 }) {
-			players[i].sendMessage("  You entered a game with " + players[(i + 1) % 2].getClientName() + ".");
+		for (int i : new int[]{0, 1}) {
+			players[i].sendMessage(
+					"  You entered a game with " + players[(i + 1) % 2].getClientName() + ".");
 		}
 
-		server.print("[" + players[0].getClientName() + " and " + players[1].getClientName() + " entered a game.]");
+		server.print("[" + players[0].getClientName() + " and " + players[1].getClientName()
+				+ " entered a game.]");
 		// TODO some message about the usage in-game.
 		players[0].sendMessage(startMsg0);
-		players[1].sendMessage(
-				"  Waiting on the settings. These are determined by " + players[0].getClientName() + ".");
+		players[1].sendMessage("  Waiting on the settings. These are determined by "
+				+ players[0].getClientName() + ".");
 		try {
 			waitForInputs();
 		} catch (InterruptedException e) {
@@ -40,10 +47,11 @@ public class GOGame extends Thread {
 
 	/** Runs game. */
 	public void run() {
-		for (int i : new int[] { 0, 1 }) {
-			players[i].sendMessage(Server.START + General.DELIMITER1 + NUMBEROFPLAYERS + General.DELIMITER1
-					+ colors[i].toString() + General.DELIMITER1 + dim + General.DELIMITER1 + players[0].getClientName()
-					+ General.DELIMITER1 + players[1].getClientName());
+		for (int i : new int[]{0, 1}) {
+			players[i].sendMessage(Server.START + General.DELIMITER1 + NUMBEROFPLAYERS
+					+ General.DELIMITER1 + colors[i].toString() + General.DELIMITER1 + dim
+					+ General.DELIMITER1 + players[0].getClientName() + General.DELIMITER1
+					+ players[1].getClientName());
 		}
 		try {
 			startGame();
@@ -53,8 +61,8 @@ public class GOGame extends Thread {
 	}
 
 	/** Sets the settings. */
-	public void setSettings(String color, int DIM) {
-		dim = DIM;
+	public void setSettings(String color, int size) {
+		dim = size;
 		if (color.equals(General.BLACK)) {
 			colors[0] = Stone.BLACK;
 			current = 0;
@@ -62,7 +70,7 @@ public class GOGame extends Thread {
 			colors[0] = Stone.WHITE;
 			current = 1;
 		}
-		colors[1] = colors[0].Other();
+		colors[1] = colors[0].other();
 		synchronized (this) {
 			notifyAll();
 		}
@@ -82,11 +90,9 @@ public class GOGame extends Thread {
 		}
 	}
 
-	/**
-	 * Starts game
+	/** Starts game.
 	 * 
-	 * @throws InterruptedException
-	 */
+	 * @throws InterruptedException */
 	private void startGame() throws InterruptedException {
 		board = new Board(dim, true, true);
 		server.print("[GH: Game starts here.]");
@@ -101,17 +107,17 @@ public class GOGame extends Thread {
 		broadcast("  [Game over!]");
 		int[] scores = board.determineScores();
 		if (colors[0].equals(Stone.BLACK)) {
-			broadcast("SCORES\n" + players[0].getClientName() + ":\t " + scores[0] + "\n" + players[1].getClientName()
-					+ ":\t " + scores[1]);
+			broadcast("SCORES\n" + players[0].getClientName() + ":\t " + scores[0] + "\n"
+					+ players[1].getClientName() + ":\t " + scores[1]);
 		} else {
-			broadcast("SCORES\n" + players[0].getClientName() + ":\t " + scores[1] + "\n" + players[1].getClientName()
-					+ ":\t " + scores[0]);
+			broadcast("SCORES\n" + players[0].getClientName() + ":\t " + scores[1] + "\n"
+					+ players[1].getClientName() + ":\t " + scores[0]);
 		}
 		players[0].removeGame();
 		players[1].removeGame();
 	}
 
-	/** Currently: broadcasts a move made by a client in propper format. */
+	/** Currently: broadcasts a move made by a client in correct format. */
 	public void makeMove(ClientHandler player, String move) {
 		String[] splitMove = move.split(General.DELIMITER2);
 		Stone color;
@@ -122,15 +128,17 @@ public class GOGame extends Thread {
 		}
 
 		if (splitMove[0].equals(Client.PASS)) {
-			broadcast(Server.TURN + General.DELIMITER1 + player.getClientName() + General.DELIMITER1 + Server.PASS
-					+ General.DELIMITER1 + other(player).getClientName());
+			broadcast(Server.TURN + General.DELIMITER1 + player.getClientName() + General.DELIMITER1
+					+ Server.PASS + General.DELIMITER1 + other(player).getClientName());
 
 			board.increasePassCounter();
 
 		} else if (splitMove[0].matches("\\d+") && splitMove[1].matches("\\d+")) {
-			if (board.isValid(Integer.parseInt(splitMove[0]), Integer.parseInt(splitMove[1]), color)) {
-				broadcast(Server.TURN + General.DELIMITER1 + player.getClientName() + General.DELIMITER1 + move
-						+ General.DELIMITER1 + other(player).getClientName());
+			if (board.isValid(Integer.parseInt(splitMove[0]), Integer.parseInt(splitMove[1]),
+					color)) {
+				broadcast(Server.TURN + General.DELIMITER1 + player.getClientName()
+						+ General.DELIMITER1 + move + General.DELIMITER1
+						+ other(player).getClientName());
 				int x = Integer.parseInt(splitMove[0]);
 				int y = Integer.parseInt(splitMove[1]);
 				board.addStone(x, y, color);
@@ -156,7 +164,8 @@ public class GOGame extends Thread {
 
 	/** Broadcasts chat message from given player to all the players in the game. */
 	public void sendChat(ClientHandler player, String msg) {
-		broadcast(Client.CHAT + General.DELIMITER1 + player.getClientName() + General.DELIMITER1 + msg);
+		broadcast(Client.CHAT + General.DELIMITER1 + player.getClientName() + General.DELIMITER1
+				+ msg);
 	}
 
 	/** Returns the other player than the given player (Assumes 2-player game). */

@@ -19,10 +19,9 @@ public class ComputerPlayer extends Player {
 	public Integer[] determineMove(Board board) {
 		Integer[] move = strategy.determineMove(board, getStone());
 		if (move[2] == 0) {
-			System.out.println(
-					getName() + " (" + getStone().toString() + ") added a stone on (" + move[0] + ", " + move[1] + "!");
-		}
-		else {
+			System.out.println(getName() + " (" + getStone().toString() + ") added a stone on ("
+					+ move[0] + ", " + move[1] + "!");
+		} else {
 			System.out.println(getName() + " (" + getStone().toString() + ") passed!");
 		}
 

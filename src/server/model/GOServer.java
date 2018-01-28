@@ -1,11 +1,14 @@
 package server.model;
 
-import java.net.*;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
-import java.io.IOException;
-import game.model.GOGame;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import game.online.GOGame;
 import general.Protocol.General;
 
 public class GOServer {
@@ -98,7 +101,7 @@ public class GOServer {
 
 	private void checkEnoughPlayers() {
 		if (requestedGames.size() > 1) {
-			ClientHandler[] players = { requestedGames.get(0), requestedGames.get(1) };
+			ClientHandler[] players = {requestedGames.get(0), requestedGames.get(1)};
 			print(ServerMessages.gameStartedMessage(players));
 			GOGame game = new GOGame(players[0], players[1], this);
 			for (ClientHandler p : players) {

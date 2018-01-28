@@ -1,7 +1,7 @@
-package game.model;
+package game.offline;
 
 import java.util.Scanner;
-
+import game.model.Board;
 import game.players.Player;
 
 public class OfflineGOGame {
@@ -48,8 +48,7 @@ public class OfflineGOGame {
 			System.out.print(prompt);
 			in = new Scanner(System.in);
 			answer = in.hasNextLine() ? in.nextLine() : null;
-		}
-		while (answer == null || (!answer.equals(yes) && !answer.equals(no)));
+		} while (answer == null || (!answer.equals(yes) && !answer.equals(no)));
 		return answer.equals(yes);
 	}
 
@@ -57,11 +56,9 @@ public class OfflineGOGame {
 		int[] scores = board.determineScores();
 		if (scores[0] > scores[1]) {
 			System.out.println(players[0].getName() + " has won!");
-		}
-		else if (scores[0] == scores[1]) {
+		} else if (scores[0] == scores[1]) {
 			System.out.println("Draw. There is no winner!");
-		}
-		else {
+		} else {
 			System.out.println(players[1].getName() + " has won!");
 		}
 		System.out.println(players[0].getName() + ": \t" + scores[0]);
