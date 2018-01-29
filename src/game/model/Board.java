@@ -8,7 +8,7 @@ import java.util.Vector;
 import com.nedap.go.gui.GoGUIIntegrator;
 
 public class Board {
-	public static int dimension;
+	private int dimension;
 	private Stone[][] board;
 	private int passCounter;
 	private boolean enabledGUI;
@@ -158,8 +158,8 @@ public class Board {
 			group.addStone(x, y);
 			groups.add(group);
 		}
-		toRemove.forEach((group) -> group.emptyList());
-		toRemove.forEach((group) -> removeGroup(group));
+		toRemove.forEach(group -> group.emptyList());
+		toRemove.forEach(group -> removeGroup(group));
 	}
 
 	/** Checks if the added stone captures a group or is captured intself. */
@@ -291,8 +291,10 @@ public class Board {
 		}
 		for (Area a : areas) {
 			if (a.getStoneArea()) {
-				for (Integer[] i : a.getList()) {
-					goGUI.addAreaIndicator(i[1], i[0], a.getStone().equals(Stone.WHITE));
+				if (enabledGUI) {
+					for (Integer[] i : a.getList()) {
+						goGUI.addAreaIndicator(i[1], i[0], a.getStone().equals(Stone.WHITE));
+					}
 				}
 				if (a.getStone().equals(Stone.BLACK)) {
 					scoreBLACK += a.length();
@@ -334,8 +336,8 @@ public class Board {
 			areas.add(area);
 			return area;
 		} else {
-			toRemove.forEach((area) -> area.emptyList());
-			toRemove.forEach((area) -> areas.remove(area));
+			toRemove.forEach(area -> area.emptyList());
+			toRemove.forEach(area -> areas.remove(area));
 			return addedTo;
 		}
 
@@ -374,4 +376,23 @@ public class Board {
 		}
 		return equal;
 	}
+
+	public void setDimension(int dim) {
+		dimension = dim;
+		board = new Stone[dimension][dimension];
+		for (int x = 0; x < dimension; x++) {
+			for (int y = 0; y < dimension; y++) {
+				board[x][y] = Stone.EMPTY;
+			}
+		}
+		if (enabledGUI) {
+			goGUI.clearBoard();
+			goGUI.setBoardSize(dimension);
+		}
+	}
+
+	public int getDimension() {
+		return dimension;
+	}
+
 }

@@ -26,7 +26,7 @@ public class Area {
 	/** Merges another area with this area. */
 	public void joinArea(Area area) {
 		List<Integer[]> list = area.getList();
-		list.forEach((node) -> nodes.add(node));
+		list.forEach(node -> nodes.add(node));
 		area.emptyList();
 		setStoneArea(getStoneArea() && area.getStoneArea());
 		if (!area.getStone().equals(getStone())) {

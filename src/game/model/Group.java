@@ -28,14 +28,14 @@ public class Group {
 	/** Merges another group with this group. */
 	public void joinGroup(Group group) {
 		List<Integer[]> list = group.getList();
-		list.forEach((color) -> stones.add(color));
+		list.forEach(color -> stones.add(color));
 		group.emptyList();
 	}
 
 	/** Gets the number of liberties of the group. */
 	public int getLiberties() {
 		List<Integer> libertiesList = new ArrayList<Integer>();
-		stones.forEach((color) -> libertiesList.add(board.getLiberties(color[0], color[1])));
+		stones.forEach(color -> libertiesList.add(board.getLiberties(color[0], color[1])));
 		int sum = 0;
 		for (int i : libertiesList) {
 			sum += i;

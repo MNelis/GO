@@ -12,12 +12,18 @@ import client.viewer.ClientView;
 import client.viewer.GOClientTUI;
 import game.model.Board;
 import game.model.Stone;
+import game.players.ComputerPlayer;
+import game.players.NaiveStrategy;
+import game.players.Player;
+import general.ClientMessages;
 import general.Protocol.Client;
 import general.Protocol.General;
 import general.Protocol.Server;
 
 public class GOClient extends Thread {
 	private static final String USAGE = "Usage : " + GOClient.class.getName() + " <name> <address>";
+	private static final String STARTAI = "STARTAI";
+	private static final String ENDAI = "ENDAI";
 
 	/** Starts the client application. */
 	public static void main(String[] args) {
@@ -57,6 +63,8 @@ public class GOClient extends Thread {
 	private ClientView goTUI;
 	private Board board;
 	private Stone stone;
+	private Player computerPlayer;
+	private boolean humanPlayer = true;
 
 	/** Constructs new client with TUI. */
 	public GOClient(String name, InetAddress host, int port) throws IOException {
@@ -65,6 +73,7 @@ public class GOClient extends Thread {
 		in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
 		out = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream()));
 		goTUI = new GOClientTUI(this);
+
 	}
 
 	/** Reads, processes, and prints incoming messages from server to client. */
@@ -76,7 +85,7 @@ public class GOClient extends Thread {
 				msg = in.readLine();
 			}
 			shutdown();
-		} catch (IOException e) {
+		} catch (IOException | InterruptedException e) {
 			shutdown();
 		}
 	}
@@ -126,8 +135,9 @@ public class GOClient extends Thread {
 	/** Processes input from server to something readable for client.
 	 * 
 	 * @param msg message from the server.
-	 * @return processed message from the server. */
-	private String processInput(String msg) {
+	 * @return processed message from the server.
+	 * @throws InterruptedException */
+	private String processInput(String msg) throws InterruptedException {
 		String[] splitMessage = msg.split("\\" + General.DELIMITER1);
 		switch (splitMessage[0]) {
 			case Server.CHAT:
@@ -143,17 +153,32 @@ public class GOClient extends Thread {
 				return "";
 
 			case Server.START:
+				String result = "";
 				if (!(splitMessage.length == 2)) {
 					startGame(splitMessage[3]);
 					if (splitMessage[2].equals(General.BLACK)) {
 						stone = Stone.BLACK;
+						computerPlayer = new ComputerPlayer(stone, new NaiveStrategy());
+						result = ClientMessages.startMessage(msg);
+						if (humanPlayer) {
+							result += "\n" + "  Enter a move (MOVE <row> <column> or MOVE PASS):";
+						} else {
+							Thread.sleep(10);
+							result += "\n" + determineMoveAI(board);
+						}
 					} else {
 						stone = Stone.WHITE;
+						computerPlayer = new ComputerPlayer(stone, new NaiveStrategy());
+						result = ClientMessages.startMessage(msg);
 					}
+
+				} else {
+					result = ClientMessages.startMessage(msg);
 				}
-				return ClientMessages.startMessage(msg);
+				return result;
 
 			case Server.TURN:
+				Thread.sleep(10);
 				int x;
 				int y;
 				String[] splitMove = splitMessage[2].split(General.DELIMITER2);
@@ -165,11 +190,19 @@ public class GOClient extends Thread {
 					} else {
 						makeMove(x, y, stone.other());
 					}
+
 				}
-				return ClientMessages.turnMessage(msg, splitMessage[3].equals(clientName));
+				if (splitMessage[3].equals(getClientName()) && !humanPlayer) {
+					return ClientMessages.turnMessage(msg, splitMessage[3].equals(clientName),
+							humanPlayer) + "\n" + determineMoveAI(board);
+				} else {
+					return ClientMessages.turnMessage(msg, splitMessage[3].equals(clientName),
+							humanPlayer);
+				}
 
 			default:
-				return msg.replace(General.DELIMITER1, " ");
+				// error("?");
+				return "";
 		}
 	}
 
@@ -184,18 +217,33 @@ public class GOClient extends Thread {
 			case Client.CHAT:
 				return msg.replaceFirst(" ", "\\" + General.DELIMITER1);
 			case Client.MOVE:
-				if (splitMessage[1].equals(Client.PASS)) {
-					return msg.replace(" ", General.DELIMITER1);
-				} else if ((splitMessage[1].matches("\\d+") && splitMessage[2].matches("\\d+"))
-						&& board.isValid(Integer.parseInt(splitMessage[1]),
-								Integer.parseInt(splitMessage[2]), stone)) {
-					return ((msg.replaceFirst(" ", "\\" + General.DELIMITER1)).replaceFirst(" ",
-							General.DELIMITER2)).replace(" ", General.DELIMITER1);
-				} else {
-					error(Server.ERROR + General.DELIMITER1 + Server.INVALID + General.DELIMITER1
-							+ " Invalid move, try something else.");
-					return "";
+				if (true) {
+					if (splitMessage[1].equals(Client.PASS)) {
+						return msg.replace(" ", General.DELIMITER1);
+					} else if ((splitMessage[1].matches("\\d+") && splitMessage[2].matches("\\d+"))
+							&& board.isValid(Integer.parseInt(splitMessage[1]),
+									Integer.parseInt(splitMessage[2]), stone)) {
+						return ((msg.replaceFirst(" ", "\\" + General.DELIMITER1)).replaceFirst(" ",
+								General.DELIMITER2)).replace(" ", General.DELIMITER1);
+					} else {
+						error(Server.ERROR + " " + Server.INVALID + " "
+								+ " Invalid move, try something else.");
+
+					}
+					// } else if (!humanPlayer){
+					// error(Server.ERROR + " You activated the computer player. "
+					// + "You can not make moves yourself.");
 				}
+				return "";
+			case STARTAI:
+				humanPlayer = false;
+				print("  Activated the computer player.\n  Enter ENDAI to deactivate it.");
+				return "";
+
+			case ENDAI:
+				humanPlayer = true;
+				print("  Deactivated the computer player.\n  Enter STARTAI to reactivate it.");
+				return "";
 
 			default:
 				return msg.replace(" ", General.DELIMITER1);
@@ -204,7 +252,7 @@ public class GOClient extends Thread {
 
 	/** Gets name of the client.
 	 * 
-	 * @return clientName. */
+	 * @ret urn clientName. */
 	public String getClientName() {
 		return clientName;
 	}
@@ -213,8 +261,24 @@ public class GOClient extends Thread {
 	 * displayed.
 	 * 
 	 * @param dim */
-	private void startGame(String dim) {
-		board = new Board(Integer.parseInt(dim), true, true);
+	private synchronized void startGame(String dim) {
+		if (board == null) {
+			board = new Board(Integer.parseInt(dim), true, true);
+		} else {
+			board.setDimension(Integer.parseInt(dim));
+		}
+
+	}
+
+	private synchronized String determineMoveAI(Board b) {
+		Integer[] move = computerPlayer.determineMove(b);
+		if (move[2] == -1) {
+			sendMessage("MOVE PASS");
+			return "  The computer passed:";
+		} else {
+			sendMessage("MOVE " + move[0] + " " + move[1]);
+			return "  The computer made a move";
+		}
 	}
 
 	/** Updates the board and GUI. A stone is added and there may be some stones
@@ -225,6 +289,14 @@ public class GOClient extends Thread {
 	 * @param color color of the added stone. */
 	private void makeMove(int x, int y, Stone color) {
 		board.addStone(x, y, color);
+	}
+
+	public void setPlayer(Player player) {
+		computerPlayer = player;
+	}
+
+	public Player getPlayer() {
+		return computerPlayer;
 	}
 
 	/** Gets TUI. */

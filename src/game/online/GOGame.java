@@ -5,39 +5,37 @@ import game.model.Stone;
 import general.Protocol.Client;
 import general.Protocol.General;
 import general.Protocol.Server;
+import general.ServerMessages;
 import server.model.ClientHandler;
-import server.model.GOServer;
 
 public class GOGame extends Thread {
 	private static final int NUMBEROFPLAYERS = 2;
 
 	private ClientHandler[] players = new ClientHandler[NUMBEROFPLAYERS];
 	private Stone[] colors = new Stone[NUMBEROFPLAYERS];
-	private GOServer server;
 	private Board board;
 	private int dim;
 	private int current = 0;
 
-	public GOGame(ClientHandler p1, ClientHandler p2, GOServer server) {
+	public GOGame(ClientHandler p1, ClientHandler p2) {
 		players[0] = p1;
 		players[1] = p2;
-		this.server = server;
 	}
 
 	/** Initiates game, acquires settings from first player. */
 	public void initiate() {
 		String startMsg0 = Server.START + General.DELIMITER1 + NUMBEROFPLAYERS;
 		for (int i : new int[]{0, 1}) {
-			players[i].sendMessage(
-					"  You entered a game with " + players[(i + 1) % 2].getClientName() + ".");
+			players[i].sendMessage(ServerMessages.CHAT + "You entered a game with "
+					+ players[(i + 1) % 2].getClientName() + ".");
 		}
-
-		server.print("[" + players[0].getClientName() + " and " + players[1].getClientName()
-				+ " entered a game.]");
+		broadcast(ServerMessages.CHAT
+				+ "Enter CHAT <your message> to sent a message to your opponent.");
 		// TODO some message about the usage in-game.
 		players[0].sendMessage(startMsg0);
-		players[1].sendMessage("  Waiting on the settings. These are determined by "
-				+ players[0].getClientName() + ".");
+		players[1].sendMessage(
+				ServerMessages.CHAT + "Waiting on the settings. These are determined by "
+						+ players[0].getClientName() + ".");
 		try {
 			waitForInputs();
 		} catch (InterruptedException e) {
@@ -94,8 +92,7 @@ public class GOGame extends Thread {
 	 * 
 	 * @throws InterruptedException */
 	private void startGame() throws InterruptedException {
-		board = new Board(dim, true, true);
-		server.print("[GH: Game starts here.]");
+		board = new Board(dim, false, true);
 		play();
 	}
 
@@ -104,14 +101,16 @@ public class GOGame extends Thread {
 			players[current].makeMove();
 			current = (current + 1) % NUMBEROFPLAYERS;
 		}
-		broadcast("  [Game over!]");
+		// TODO
 		int[] scores = board.determineScores();
 		if (colors[0].equals(Stone.BLACK)) {
-			broadcast("SCORES\n" + players[0].getClientName() + ":\t " + scores[0] + "\n"
-					+ players[1].getClientName() + ":\t " + scores[1]);
+			broadcast(ServerMessages.CHAT + "SCORES\n" + ServerMessages.CHAT
+					+ players[0].getClientName() + ":  \t " + scores[0] + "\n" + ServerMessages.CHAT
+					+ players[1].getClientName() + ":  \t " + scores[1]);
 		} else {
-			broadcast("SCORES\n" + players[0].getClientName() + ":\t " + scores[1] + "\n"
-					+ players[1].getClientName() + ":\t " + scores[0]);
+			broadcast(ServerMessages.CHAT + "SCORES\n" + ServerMessages.CHAT
+					+ players[0].getClientName() + ":  \t " + scores[1] + "\n" + ServerMessages.CHAT
+					+ players[1].getClientName() + ":  \t " + scores[0]);
 		}
 		players[0].removeGame();
 		players[1].removeGame();
@@ -128,10 +127,9 @@ public class GOGame extends Thread {
 		}
 
 		if (splitMove[0].equals(Client.PASS)) {
+			board.increasePassCounter();
 			broadcast(Server.TURN + General.DELIMITER1 + player.getClientName() + General.DELIMITER1
 					+ Server.PASS + General.DELIMITER1 + other(player).getClientName());
-
-			board.increasePassCounter();
 
 		} else if (splitMove[0].matches("\\d+") && splitMove[1].matches("\\d+")) {
 			if (board.isValid(Integer.parseInt(splitMove[0]), Integer.parseInt(splitMove[1]),
@@ -144,7 +142,7 @@ public class GOGame extends Thread {
 				board.addStone(x, y, color);
 				board.resetPassCounter();
 			} else {
-				player.sendMessage("  [GH: invalid move.]");
+				player.sendMessage(ServerMessages.INVALIDMOVE);
 			}
 		}
 
@@ -158,7 +156,8 @@ public class GOGame extends Thread {
 		// TODO find out it current player quits or the other
 		players[0].notifier();
 		players[1].notifier();
-		broadcast("  " + player.getClientName() + " could not handle the pressure and gave up.");
+		broadcast(ServerMessages.CHAT + player.getClientName()
+				+ " could not handle the pressure and gave up.");
 		broadcast(Server.ENDGAME);
 	}
 

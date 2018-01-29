@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.List;
 import game.online.GOGame;
 import general.Protocol.General;
+import general.ServerMessages;
 
 public class GOServer {
 	// private static final String USAGE = "Usage: " + GOServer.class.getName();
@@ -103,7 +104,7 @@ public class GOServer {
 		if (requestedGames.size() > 1) {
 			ClientHandler[] players = {requestedGames.get(0), requestedGames.get(1)};
 			print(ServerMessages.gameStartedMessage(players));
-			GOGame game = new GOGame(players[0], players[1], this);
+			GOGame game = new GOGame(players[0], players[1]);
 			for (ClientHandler p : players) {
 				p.setGame(game);
 				addInGame(p);
@@ -117,9 +118,9 @@ public class GOServer {
 	/** Checks whether or not a given client name is in the list 'threads'. */
 	public boolean containsClientName(String clientName) {
 		List<String> clientNames = new ArrayList<>();
-		lobby.forEach((client) -> clientNames.add(client.getClientName()));
-		requestedGames.forEach((client) -> clientNames.add(client.getClientName()));
-		inGame.forEach((client) -> clientNames.add(client.getClientName()));
+		lobby.forEach(client -> clientNames.add(client.getClientName()));
+		requestedGames.forEach(client -> clientNames.add(client.getClientName()));
+		inGame.forEach(client -> clientNames.add(client.getClientName()));
 		return clientNames.contains(clientName);
 	}
 }

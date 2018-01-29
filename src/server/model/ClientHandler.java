@@ -12,6 +12,7 @@ import game.online.GOGame;
 import general.Protocol.Client;
 import general.Protocol.General;
 import general.Protocol.Server;
+import general.ServerMessages;
 
 public class ClientHandler extends Thread {
 	private GOServer server;
@@ -110,6 +111,7 @@ public class ClientHandler extends Thread {
 		this.game = null;
 		inGame = false;
 		server.removeInGame(this);
+		sendMessage(ServerMessages.CHAT + "Welcome back in the lobby.");
 	}
 
 	/** @throws InterruptedException */
@@ -122,7 +124,7 @@ public class ClientHandler extends Thread {
 	/** Shutdown. */
 	private void shutdown() {
 		server.removeFromLobby(this);
-		server.print("[" + clientName + " has left.]");
+		server.print(clientName + " has left.");
 	}
 
 	/** Disconnect. */
@@ -145,7 +147,6 @@ public class ClientHandler extends Thread {
 					break;
 
 				case Client.MOVE:
-					// TODO check if valid move.
 					if (currentTurn) {
 						game.makeMove(this, splitInput[1]);
 						notifier();
@@ -169,11 +170,13 @@ public class ClientHandler extends Thread {
 					} else {
 						sendMessage(ServerMessages.INVALIDSETTINGS);
 					}
-
 					break;
 
 				default:
-					sendMessage(ServerMessages.UNKNOWNCOMMAND);
+					if (!input.equals("")) {
+						sendMessage(ServerMessages.UNKNOWNCOMMAND + General.DELIMITER1 + input);
+					}
+
 			}
 		} else {
 			switch (splitInput[0]) {
@@ -193,7 +196,9 @@ public class ClientHandler extends Thread {
 					sendMessage(ServerMessages.QUITREQUEST);
 					break;
 				default:
-					sendMessage(ServerMessages.UNKNOWNCOMMAND);
+					if (!input.equals("")) {
+						sendMessage(ServerMessages.UNKNOWNCOMMAND + General.DELIMITER1 + input);
+					}
 			}
 		}
 
