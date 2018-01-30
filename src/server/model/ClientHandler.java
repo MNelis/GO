@@ -8,6 +8,10 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import errors.IncompatibleProtocolException;
+import errors.NameTakenException;
+import errors.OtherException;
+import errors.UnknownCommandException;
 import game.online.GOGame;
 import general.Protocol.Client;
 import general.Protocol.General;
@@ -24,6 +28,7 @@ public class ClientHandler extends Thread {
 	private String[] clientExtension;
 	private GOGame game;
 	private boolean inGame = false;
+	private boolean gameStarted = false;
 	private boolean currentTurn = false;
 
 	/** Constructs client handler. */
@@ -46,20 +51,21 @@ public class ClientHandler extends Thread {
 			clientExtension[i] = splitMessage[i + 5];
 		}
 		// Checks if protocol versions are compatible and name not taken.
-		if (clientVersion != Server.VERSIONNO) {
-			// TODO message for server.
-			sendMessage(ServerMessages.incompatibleError(clientVersion));
-			disconnect();
-		} else if (server.containsClientName(clientName)) {
-			// TODO message for server.
-			sendMessage(ServerMessages.nameTakenError(clientName));
-			disconnect();
-		} else {
-			// TODO message for server.
-			sendMessage(ServerMessages.welcomeMessage(clientName));
-			if (clientExtension[0].equals("1")) {
-				sendMessage(ServerMessages.CHATENABLEDMESSAGE);
+		try {
+			if (clientVersion != Server.VERSIONNO) {
+				throw new IncompatibleProtocolException(
+						ServerMessages.incompatibleError(clientVersion));
+			} else if (server.containsClientName(clientName)) {
+				throw new NameTakenException(ServerMessages.nameTakenError(clientName));
+			} else {
+				sendMessage(ServerMessages.welcomeMessage(clientName));
+				if (clientExtension[0].equals("1")) {
+					sendMessage(ServerMessages.CHATENABLEDMESSAGE);
+				}
 			}
+		} catch (IncompatibleProtocolException | NameTakenException e) {
+			sendMessage(e.getMessage());
+			disconnect();
 		}
 	}
 
@@ -68,12 +74,23 @@ public class ClientHandler extends Thread {
 		try {
 			String msg = in.readLine();
 			while (msg != null) {
-				processInput(msg);
+				try {
+					processInput(msg);
+				} catch (UnknownCommandException | OtherException e) {
+					sendMessage(e.getMessage());
+				}
 				msg = in.readLine();
+			}
+			if (gameStarted) {
+				game.quit(this);
 			}
 			shutdown();
 		} catch (IOException e) {
+			if (gameStarted) {
+				game.quit(this);
+			}
 			shutdown();
+
 		}
 	}
 
@@ -107,10 +124,16 @@ public class ClientHandler extends Thread {
 		inGame = true;
 	}
 
+	public void startedGame() {
+		gameStarted = true;
+	}
+
 	public void removeGame() {
 		this.game = null;
 		inGame = false;
+		gameStarted = false;
 		server.removeInGame(this);
+		server.print(clientName + " left the game and returned to the lobby.");
 		sendMessage(ServerMessages.CHAT + "Welcome back in the lobby.");
 	}
 
@@ -136,14 +159,24 @@ public class ClientHandler extends Thread {
 		}
 	}
 
-	/** Processes the input from client to server. */
+	/** Processes the input from client to server.
+	 * 
+	 * @throws UnknownCommandException
+	 * @throws OtherException */
 	// TODO do we want to log every action from all clients?
-	private void processInput(String input) {
+	private void processInput(String input) throws UnknownCommandException, OtherException {
 		String[] splitInput = input.split("\\" + General.DELIMITER1);
-		if (inGame) {
+
+		if (inGame && gameStarted) {
 			switch (splitInput[0]) {
 				case Client.CHAT:
 					game.sendChat(this, input.substring(5));
+					break;
+
+				case "EXIT":
+					game.quit(this);
+					shutdown();
+					disconnect();
 					break;
 
 				case Client.MOVE:
@@ -151,13 +184,42 @@ public class ClientHandler extends Thread {
 						game.makeMove(this, splitInput[1]);
 						notifier();
 					} else {
-						sendMessage(ServerMessages.NOTYOURTURN);
+						throw new OtherException(ServerMessages.NOTYOURTURN);
 					}
 					break;
 
 				case Client.QUIT:
+					server.print(clientName + "quits the game.");
 					game.quit(this);
 					notifier();
+					break;
+
+				// case Client.SETTINGS:
+				// throw new OtherException("Settings are already set.");
+
+				default:
+					if (!input.equals("")) {
+						throw new UnknownCommandException();
+					}
+
+			}
+		} else if (inGame && !gameStarted) {
+			switch (splitInput[0]) {
+				case Client.CHAT:
+					game.sendChat(this, input.substring(5));
+					break;
+
+				case "EXIT":
+					shutdown();
+					disconnect();
+					break;
+
+				// case Client.MOVE:
+				// throw new OtherException("Game has not started yet.");
+
+				case Client.QUIT:
+					server.print(clientName + "quits the game.");
+					game.quit(this);
 					break;
 
 				case Client.SETTINGS:
@@ -166,38 +228,57 @@ public class ClientHandler extends Thread {
 					colors.add(General.WHITE);
 					if (splitInput.length == 3 && colors.contains(splitInput[1])
 							&& splitInput[2].matches("\\d+")) {
-						game.setSettings(splitInput[1], Integer.parseInt(splitInput[2]));
+						int dimension = Integer.parseInt(splitInput[2]);
+						if (Integer.parseInt(splitInput[2]) < 5) {
+							dimension = 5;
+						} else if (Integer.parseInt(splitInput[2]) > 19) {
+							dimension = 19;
+						}
+						game.setSettings(splitInput[1], dimension);
 					} else {
-						sendMessage(ServerMessages.INVALIDSETTINGS);
+						throw new OtherException(ServerMessages.INVALIDSETTINGS);
 					}
 					break;
 
 				default:
 					if (!input.equals("")) {
-						sendMessage(ServerMessages.UNKNOWNCOMMAND + General.DELIMITER1 + input);
+						throw new UnknownCommandException();
 					}
 
 			}
+
 		} else {
 			switch (splitInput[0]) {
 				case Client.CHAT:
 					server.broadcast(Client.CHAT + General.DELIMITER1 + this.getClientName()
 							+ General.DELIMITER1 + input.substring(5));
 					break;
-				case Client.REQUESTGAME:
-					server.print(ServerMessages.newRequestMessage(clientName));
-					sendMessage(ServerMessages.REQUESTEDGAME);
-					server.addRequestedGame(this);
+				case "EXIT":
+					shutdown();
+					disconnect();
 					break;
+
 				case Client.QUIT:
 					server.removeRequestedGame(this);
 					server.addToLobby(this);
 					server.print(ServerMessages.quitRequestMessage(clientName));
 					sendMessage(ServerMessages.QUITREQUEST);
 					break;
+
+				case Client.REQUESTGAME:
+					if (splitInput.length == 3 && splitInput[1].equals("2")
+							&& splitInput[2].equals(Client.RANDOM)) {
+						server.print(ServerMessages.newRequestMessage(clientName));
+						server.addRequestedGame(this);
+						sendMessage(ServerMessages.REQUESTEDGAME);
+						break;
+					} else {
+						throw new UnknownCommandException("Unknown game request. ");
+					}
+
 				default:
 					if (!input.equals("")) {
-						sendMessage(ServerMessages.UNKNOWNCOMMAND + General.DELIMITER1 + input);
+						throw new UnknownCommandException();
 					}
 			}
 		}

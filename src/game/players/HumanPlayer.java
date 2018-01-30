@@ -26,8 +26,6 @@ public class HumanPlayer extends Player {
 
 	}
 
-	// TODO currently prints everything in console, might not be handy
-	//
 	private Integer[] readInt(String prompt) {
 		Integer[] value = new Integer[]{0, 0, 0};
 		boolean moveRead = false;

@@ -4,7 +4,7 @@ package general;
 public class Protocol {
 	/**
 	 * @author Rosalyn.Sleurink
-	 * @version 5
+	 * @version 6
 	 */
 	
 	/**
@@ -22,13 +22,17 @@ public class Protocol {
 	 * - Delimiter weer terugveranderd naar $.
 	 * - Aan TURN zijn String FIRST en PASS toegevoegd
 	 * - Tweede voorbeeld bij START is aangepast naar het format.
+	 * 
+	 * Aanpassing versie 5 -> 6:
+	 * - EXIT commando toegevoegd
+	 * - Afspraak gemaakt dat bord grootte kan hebben van 5 t/m 19.
 	 */
 	
 	/**
 	 * OVERAL WAAR SPATIES STAAN KOMT DUS DELIMITER1 (in de voorbeelden en formats).
 	 * OOK MOETEN ALLE COMMANDO'S EINDIGEN MET COMMAND_END.
 	 */
-	public static final int VERSION_NO = 5;
+	public static final int VERSION_NO = 6;
 	
 	public static class Client {
 		/**
@@ -54,19 +58,29 @@ public class Protocol {
 		/**
 		 * Als de server een START met aantal spelers heeft gestuurd mag je je voorkeur doorgeven 
 		 * voor kleur en grootte van het bord. Dit wordt gevraagd aan de speler die er als eerst 
-		 * was.<br>
+		 * was. Grootte van het bord mag van 5 t/m 19 zijn.<br>
 		 * Format: SETTINGS kleur bordgrootte<br>
 		 * Voorbeeld: SETTINGS BLACK 19
 		 */
 		public static final String SETTINGS = "SETTINGS";
 		
 		/**
-		 * Als je midden in een spel zit en wil stoppen. Wordt niet gestuurd als client abrupt 
-		 * afgesloten wordt.<br>
+		 * Als je midden in een spel zit en wil stoppen. Je krijgt dan 0 punten.
+		 * Wordt niet gestuurd als client abrupt. 
+		 * afgesloten wordt. Als je dit stuurt nadat je een REQUESTGAME hebt gedaan gebeurt er
+		 * niks.<br>
 		 * Format: QUIT<br>
 		 * Voorbeeld: QUIT
 		 */
 		public static final String QUIT = "QUIT";
+		
+		/**
+		 * Kan gestuurd worden als je in een spel zit of in de lobby, betekent dat de Client 
+		 * helemaal weg gaat.<br>
+		 * Format: EXIT<br>
+		 * Voorbeeld: QUIT
+		 */
+		public static final String EXIT = "EXIT";
 		
 		/**
 		 * Sturen als je een spel wilt spelen. De eerste keer en als een spel afgelopen is opnieuw.
@@ -96,7 +110,7 @@ public class Protocol {
 		public static final String DECLINEGAME = "DECLINEGAME";
 		
 		/**
-		 * Om op te vragen wie je allemaal kan uitdagen.<br>
+		  * Om op te vragen wie je allemaal kan uitdagen.<br>
 		 * Format: LOBBY<br>
 		 * Voorbeeld: LOBBY
 		 */
@@ -136,7 +150,7 @@ public class Protocol {
 		 * Een spel starten. Dit stuur je naar de eerste speler. <br>
 		 * Format: START aantalspelers (naar speler 1)<br>
 		 * Format: START aantalspelers kleur bordgrootte speler1 speler2 (3, etc..) 
-		 * (naar alle spelers)<br>
+		 * (naar alle spelers) Bordgrootte kan waarde hebben van 5 t/m 19.<br>
 		 * Voorbeeld: START 2 of START 2 BLACK 19 jan piet
 		 */
 		public static final String START = "START";

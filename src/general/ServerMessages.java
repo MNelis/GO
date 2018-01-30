@@ -29,33 +29,44 @@ public class ServerMessages {
 	// Messages sent from the server.
 	public static final String CHATENABLEDMESSAGE = CHAT + "Enter CHAT <your message> "
 			+ "to sent a message to everyone in the lobby.";
-	public static final String NOTYOURTURN = Server.ERROR + General.DELIMITER1
-			+ " It is not your turn. You cannot make a move.";
-	public static final String INVALIDSETTINGS = Server.ERROR + General.DELIMITER1 + Server.UNKNOWN
-			+ General.DELIMITER1 + " Wrong settings input. Please re-enter settings.";
+
 	public static final String REQUESTEDGAME = CHAT + "Thank you for requesting a game. "
 			+ "Please wait on a opponent. \n" + CHAT + "Enter QUIT to revoke your request.";
 	public static final String QUITREQUEST = CHAT + "Game request revoked.";
-	public static final String UNKNOWNCOMMAND = Server.ERROR + General.DELIMITER1 + Server.UNKNOWN
-			+ General.DELIMITER1 + " Unknown command:";
-	public static final String INVALIDMOVE = Server.ERROR + General.DELIMITER1 + Server.INVALID
-			+ General.DELIMITER1 + " Invalid move.";
-
-	public static String incompatibleError(int version) {
-		return Server.ERROR + General.DELIMITER1 + Server.INCOMPATIBLEPROTOCOL
-				+ " You tried to connect with protocol version " + version
-				+ ". Please reconnect with protocol version " + Server.VERSIONNO;
-	}
-
-	public static String nameTakenError(String name) {
-		return Server.ERROR + General.DELIMITER1 + Server.NAMETAKEN + " Name " + name
-				+ " is already taken." + ". Please reconnect with another name.";
-	}
 
 	public static String welcomeMessage(String name) {
 		return CHAT + "Welcome to the lobby of this GO-server, " + name + ".\n" + CHAT
 				+ "Enter REQUESTGAME to request a game. \n" + CHAT
 				+ "Enter STARTAI to activate the computer player.";
+	}
+
+	public static String quitGame(int winScore, int loseScore, ClientHandler winPlayer,
+			ClientHandler losePlayer) {
+		return Server.ENDGAME + General.DELIMITER1 + Server.ABORTED + General.DELIMITER1
+				+ winPlayer.getClientName() + General.DELIMITER1 + winScore + General.DELIMITER1
+				+ losePlayer.getClientName() + General.DELIMITER1 + loseScore;
+	}
+	
+	public static String finishedGame(int winScore, int loseScore, ClientHandler winPlayer,
+			ClientHandler losePlayer) {
+		return Server.ENDGAME + General.DELIMITER1 + Server.FINISHED + General.DELIMITER1
+				+ winPlayer.getClientName() + General.DELIMITER1 + winScore + General.DELIMITER1
+				+ losePlayer.getClientName() + General.DELIMITER1 + loseScore;
+	}
+
+	// Errors
+	public static final String NOTYOURTURN = "It is not your turn. You cannot make a move.";
+	public static final String INVALIDSETTINGS = "Wrong settings input. Please re-enter settings.";
+	public static final String UNKNOWNCOMMAND = "Unknown command";
+	public static final String INVALIDMOVE = "Invalid move.";
+
+	public static String incompatibleError(int version) {
+		return "You tried to connect with protocol version " + version
+				+ ". Please reconnect with protocol version " + Server.VERSIONNO;
+	}
+
+	public static String nameTakenError(String name) {
+		return "Name " + name + " is already taken. Please reconnect with another name.";
 	}
 
 }

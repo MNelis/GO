@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import errors.OtherException;
 import game.online.GOGame;
 import general.Protocol.General;
 import general.ServerMessages;
@@ -22,10 +23,6 @@ public class GOServer {
 
 	/** Starts a Server-application. */
 	public static void main(String[] args) throws IOException {
-		// if (args.length != 1) {
-		// System.out.println(USAGE);
-		// System.exit(0);
-		// }
 
 		GOServer server = new GOServer(General.DEFAULT_PORT);
 		server.run();
@@ -72,25 +69,38 @@ public class GOServer {
 
 	/** Adds handler to list 'threads'. */
 	public void addToLobby(ClientHandler handler) {
-		lobby.add(handler);
+		if (!lobby.contains(handler)) {
+			lobby.add(handler);
+		}
 	}
 
 	/** Removes handler from list 'threads'. */
 	public void removeFromLobby(ClientHandler handler) {
-		lobby.remove(handler);
+		if (lobby.contains(handler)) {
+			lobby.remove(handler);
+		}
 	}
 
-	public void addRequestedGame(ClientHandler handler) {
-		requestedGames.add(handler);
-		removeFromLobby(handler);
-		checkEnoughPlayers();
+	public void addRequestedGame(ClientHandler handler) throws OtherException {
+		if (!requestedGames.contains(handler)) {
+			requestedGames.add(handler);
+			removeFromLobby(handler);
+			checkEnoughPlayers();
+		} else {
+			throw new OtherException("You already requested a game.");
+		}
 	}
 
-	public void removeRequestedGame(ClientHandler handler) {
-		requestedGames.remove(handler);
+	public void removeRequestedGame(ClientHandler handler) throws OtherException {
+		if (requestedGames.contains(handler)) {
+			requestedGames.remove(handler);
+		} else {
+			throw new OtherException("You already revoked your request.");
+		}
+
 	}
 
-	public void addInGame(ClientHandler handler) {
+	public void addInGame(ClientHandler handler) throws OtherException {
 		inGame.add(handler);
 		removeRequestedGame(handler);
 	}
@@ -100,7 +110,7 @@ public class GOServer {
 		lobby.add(handler);
 	}
 
-	private void checkEnoughPlayers() {
+	private void checkEnoughPlayers() throws OtherException {
 		if (requestedGames.size() > 1) {
 			ClientHandler[] players = {requestedGames.get(0), requestedGames.get(1)};
 			print(ServerMessages.gameStartedMessage(players));
@@ -108,7 +118,6 @@ public class GOServer {
 			for (ClientHandler p : players) {
 				p.setGame(game);
 				addInGame(p);
-				removeRequestedGame(p);
 			}
 			game.initiate();
 			game.start();

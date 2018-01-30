@@ -10,6 +10,9 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import client.viewer.ClientView;
 import client.viewer.GOClientTUI;
+import errors.InvalidMoveException;
+import errors.OtherException;
+import errors.UnknownCommandException;
 import game.model.Board;
 import game.model.Stone;
 import game.players.ComputerPlayer;
@@ -23,7 +26,7 @@ import general.Protocol.Server;
 public class GOClient extends Thread {
 	private static final String USAGE = "Usage : " + GOClient.class.getName() + " <name> <address>";
 	private static final String STARTAI = "STARTAI";
-	private static final String ENDAI = "ENDAI";
+	private static final String ENDCAI = "ENDAI";
 
 	/** Starts the client application. */
 	public static void main(String[] args) {
@@ -98,6 +101,8 @@ public class GOClient extends Thread {
 			out.flush();
 		} catch (IOException e) {
 			shutdown();
+		} catch (InvalidMoveException | OtherException e) {
+			error(ClientMessages.errorMessage(e.getMessage()));
 		}
 	}
 
@@ -109,6 +114,7 @@ public class GOClient extends Thread {
 		} catch (IOException e) {
 			error("ERROR: error closing the socket connection.");
 		}
+		System.exit(0);
 	}
 
 	// prints on tui
@@ -136,7 +142,8 @@ public class GOClient extends Thread {
 	 * 
 	 * @param msg message from the server.
 	 * @return processed message from the server.
-	 * @throws InterruptedException */
+	 * @throws InterruptedException
+	 * @throws UnknownCommandException */
 	private String processInput(String msg) throws InterruptedException {
 		String[] splitMessage = msg.split("\\" + General.DELIMITER1);
 		switch (splitMessage[0]) {
@@ -160,12 +167,12 @@ public class GOClient extends Thread {
 						stone = Stone.BLACK;
 						computerPlayer = new ComputerPlayer(stone, new NaiveStrategy());
 						result = ClientMessages.startMessage(msg);
-						if (humanPlayer) {
-							result += "\n" + "  Enter a move (MOVE <row> <column> or MOVE PASS):";
-						} else {
-							Thread.sleep(10);
-							result += "\n" + determineMoveAI(board);
-						}
+						// if (humanPlayer) {
+						// result += "\n" + " Enter a move (MOVE <row> <column> or MOVE PASS):";
+						// } else {
+						// Thread.sleep(10);
+						// result += "\n" + determineMoveAI(board);
+						// }
 					} else {
 						stone = Stone.WHITE;
 						computerPlayer = new ComputerPlayer(stone, new NaiveStrategy());
@@ -182,7 +189,8 @@ public class GOClient extends Thread {
 				int x;
 				int y;
 				String[] splitMove = splitMessage[2].split(General.DELIMITER2);
-				if (!splitMove[0].equals(Client.PASS)) {
+				if (splitMove.length == 2 && splitMove[0].matches("\\d+")
+						&& splitMove[1].matches("\\d+")) {
 					x = Integer.parseInt(splitMove[0]);
 					y = Integer.parseInt(splitMove[1]);
 					if (splitMessage[1].equals(clientName)) {
@@ -190,7 +198,6 @@ public class GOClient extends Thread {
 					} else {
 						makeMove(x, y, stone.other());
 					}
-
 				}
 				if (splitMessage[3].equals(getClientName()) && !humanPlayer) {
 					return ClientMessages.turnMessage(msg, splitMessage[3].equals(clientName),
@@ -201,7 +208,7 @@ public class GOClient extends Thread {
 				}
 
 			default:
-				// error("?");
+				error("?");
 				return "";
 		}
 	}
@@ -210,39 +217,47 @@ public class GOClient extends Thread {
 	 * protocol).
 	 * 
 	 * @param msg the message provided by the client.
-	 * @return a adjusted message. */
-	private String processOutput(String msg) {
+	 * @return a adjusted message.
+	 * @throws InvalidMoveException
+	 * @throws OtherException */
+	private String processOutput(String msg) throws InvalidMoveException, OtherException {
 		String[] splitMessage = msg.split(" ");
 		switch (splitMessage[0]) {
 			case Client.CHAT:
 				return msg.replaceFirst(" ", "\\" + General.DELIMITER1);
 			case Client.MOVE:
-				if (true) {
-					if (splitMessage[1].equals(Client.PASS)) {
-						return msg.replace(" ", General.DELIMITER1);
-					} else if ((splitMessage[1].matches("\\d+") && splitMessage[2].matches("\\d+"))
-							&& board.isValid(Integer.parseInt(splitMessage[1]),
-									Integer.parseInt(splitMessage[2]), stone)) {
-						return ((msg.replaceFirst(" ", "\\" + General.DELIMITER1)).replaceFirst(" ",
-								General.DELIMITER2)).replace(" ", General.DELIMITER1);
-					} else {
-						error(Server.ERROR + " " + Server.INVALID + " "
-								+ " Invalid move, try something else.");
 
-					}
-					// } else if (!humanPlayer){
-					// error(Server.ERROR + " You activated the computer player. "
-					// + "You can not make moves yourself.");
+				if (splitMessage.length == 2 && splitMessage[1].equals(Client.PASS)) {
+					return msg.replace(" ", General.DELIMITER1);
+				} else if (splitMessage.length == 3
+						&& (splitMessage[1].matches("\\d+") && splitMessage[2].matches("\\d+"))
+						&& board.isValid(Integer.parseInt(splitMessage[1]),
+								Integer.parseInt(splitMessage[2]), stone)) {
+					return ((msg.replaceFirst(" ", "\\" + General.DELIMITER1)).replaceFirst(" ",
+							General.DELIMITER2)).replace(" ", General.DELIMITER1);
+				} else {
+					throw new InvalidMoveException("Invalid move. Try something else.");
+				}
+
+			case Client.REQUESTGAME:
+				return ClientMessages.REQUESTGAME;
+
+			case STARTAI:
+				if (humanPlayer) {
+					humanPlayer = false;
+					print("  Activated the computer player.\n  Enter ENDAI to deactivate it.");
+				} else {
+					throw new OtherException("You already activated the computer player.");
 				}
 				return "";
-			case STARTAI:
-				humanPlayer = false;
-				print("  Activated the computer player.\n  Enter ENDAI to deactivate it.");
-				return "";
 
-			case ENDAI:
-				humanPlayer = true;
-				print("  Deactivated the computer player.\n  Enter STARTAI to reactivate it.");
+			case ENDCAI:
+				if (!humanPlayer) {
+					humanPlayer = true;
+					print("  Deactivated the computer player.\n  Enter STARTAI to reactivate it.");
+				} else {
+					throw new OtherException("You already deactivated the computer player.");
+				}
 				return "";
 
 			default:
@@ -252,7 +267,7 @@ public class GOClient extends Thread {
 
 	/** Gets name of the client.
 	 * 
-	 * @ret urn clientName. */
+	 * @return clientName. */
 	public String getClientName() {
 		return clientName;
 	}
@@ -262,6 +277,7 @@ public class GOClient extends Thread {
 	 * 
 	 * @param dim */
 	private synchronized void startGame(String dim) {
+
 		if (board == null) {
 			board = new Board(Integer.parseInt(dim), true, true);
 		} else {
@@ -277,7 +293,7 @@ public class GOClient extends Thread {
 			return "  The computer passed:";
 		} else {
 			sendMessage("MOVE " + move[0] + " " + move[1]);
-			return "  The computer made a move";
+			return "  The computer made a move.";
 		}
 	}
 

@@ -138,8 +138,30 @@ public class BoardTest {
 		board.addStone(1, 1, Stone.WHITE);
 
 		int[] scores = board.determineScores();
-		assertEquals(scores[0], 4);
-		assertEquals(scores[1], 6);
+		assertEquals(4, scores[0]);
+		assertEquals(6, scores[1]);
+	}
+
+	@Test
+	public void testNumberStonesAndStonesLeft() {
+		int[] numbers = board.getNumberStones();
+		assertEquals(8, numbers[0]);
+		assertEquals(8, numbers[1]);
+		assertTrue(board.stonesLeft());
+
+		board.addStone(0, 0, Stone.BLACK);
+		assertEquals(7, numbers[0]);
+		assertEquals(8, numbers[1]);
+		assertTrue(board.stonesLeft());
+
+		board.addStone(0, 1, Stone.BLACK);
+		board.addStone(0, 2, Stone.BLACK);
+		board.addStone(0, 3, Stone.BLACK);
+		board.addStone(1, 0, Stone.BLACK);
+		board.addStone(1, 1, Stone.BLACK);
+		board.addStone(1, 2, Stone.BLACK);
+		board.addStone(1, 3, Stone.BLACK);
+		assertFalse(board.stonesLeft());
 	}
 
 }

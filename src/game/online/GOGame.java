@@ -1,5 +1,6 @@
 package game.online;
 
+import errors.OtherException;
 import game.model.Board;
 import game.model.Stone;
 import general.Protocol.Client;
@@ -16,6 +17,8 @@ public class GOGame extends Thread {
 	private Board board;
 	private int dim;
 	private int current = 0;
+	private boolean gameStarted = false;
+	private boolean abortedGame = false;
 
 	public GOGame(ClientHandler p1, ClientHandler p2) {
 		players[0] = p1;
@@ -31,7 +34,6 @@ public class GOGame extends Thread {
 		}
 		broadcast(ServerMessages.CHAT
 				+ "Enter CHAT <your message> to sent a message to your opponent.");
-		// TODO some message about the usage in-game.
 		players[0].sendMessage(startMsg0);
 		players[1].sendMessage(
 				ServerMessages.CHAT + "Waiting on the settings. These are determined by "
@@ -92,7 +94,19 @@ public class GOGame extends Thread {
 	 * 
 	 * @throws InterruptedException */
 	private void startGame() throws InterruptedException {
+		players[0].startedGame();
+		players[1].startedGame();
 		board = new Board(dim, false, true);
+		gameStarted = true;
+		if (colors[0].equals(Stone.BLACK)) {
+			broadcast(Server.TURN + General.DELIMITER1 + players[0].getClientName()
+					+ General.DELIMITER1 + Server.FIRST + General.DELIMITER1
+					+ players[0].getClientName());
+		} else {
+			broadcast(Server.TURN + General.DELIMITER1 + players[1].getClientName()
+					+ General.DELIMITER1 + Server.FIRST + General.DELIMITER1
+					+ players[1].getClientName());
+		}
 		play();
 	}
 
@@ -101,23 +115,50 @@ public class GOGame extends Thread {
 			players[current].makeMove();
 			current = (current + 1) % NUMBEROFPLAYERS;
 		}
-		// TODO
-		int[] scores = board.determineScores();
-		if (colors[0].equals(Stone.BLACK)) {
-			broadcast(ServerMessages.CHAT + "SCORES\n" + ServerMessages.CHAT
-					+ players[0].getClientName() + ":  \t " + scores[0] + "\n" + ServerMessages.CHAT
-					+ players[1].getClientName() + ":  \t " + scores[1]);
-		} else {
-			broadcast(ServerMessages.CHAT + "SCORES\n" + ServerMessages.CHAT
-					+ players[0].getClientName() + ":  \t " + scores[1] + "\n" + ServerMessages.CHAT
-					+ players[1].getClientName() + ":  \t " + scores[0]);
+		gameStarted = false;
+
+		if (!abortedGame) {
+			int[] scores = board.determineScores();
+			if (scores[0] > scores[1]) {
+				if (colors[0].equals(Stone.BLACK)) {
+					broadcast(ServerMessages.finishedGame(scores[0], scores[1], players[0],
+							players[1]));
+				} else {
+					broadcast(ServerMessages.finishedGame(scores[1], scores[0], players[1],
+							players[0]));
+				}
+			} else {
+				if (colors[0].equals(Stone.BLACK)) {
+					broadcast(ServerMessages.finishedGame(scores[1], scores[0], players[1],
+							players[0]));
+				} else {
+					broadcast(ServerMessages.finishedGame(scores[0], scores[1], players[0],
+							players[1]));
+				}
+			}
 		}
+
+		//
+
+		// {
+		// broadcast(ServerMessages.CHAT + "SCORES\n" + ServerMessages.CHAT
+		// + players[0].getClientName() + ": \t " + scores[0] + "\n" +
+		// ServerMessages.CHAT
+		// + players[1].getClientName() + ": \t " + scores[1] + "\n");
+		// } else {
+		// broadcast(ServerMessages.CHAT + "SCORES\n" + ServerMessages.CHAT
+		// + players[0].getClientName() + ": \t " + scores[1] + "\n" +
+		// ServerMessages.CHAT
+		// + players[1].getClientName() + ": \t " + scores[0] + "\n");
+		// }
 		players[0].removeGame();
 		players[1].removeGame();
 	}
 
-	/** Currently: broadcasts a move made by a client in correct format. */
-	public void makeMove(ClientHandler player, String move) {
+	/** Currently: broadcasts a move made by a client in correct format.
+	 * 
+	 * @throws OtherException */
+	public void makeMove(ClientHandler player, String move) throws OtherException {
 		String[] splitMove = move.split(General.DELIMITER2);
 		Stone color;
 		if (player.equals(players[0])) {
@@ -142,23 +183,31 @@ public class GOGame extends Thread {
 				board.addStone(x, y, color);
 				board.resetPassCounter();
 			} else {
-				player.sendMessage(ServerMessages.INVALIDMOVE);
+				throw new OtherException(ServerMessages.INVALIDMOVE);
 			}
 		}
 
-		// TODO handle a move, check if it is valid etc.
-		// server.print("[GH: Stuff to handle a move will come here.]");
 	}
 
 	/** Handles a player who quits the game. */
 	public void quit(ClientHandler player) {
-		board.quitGame();
-		// TODO find out it current player quits or the other
-		players[0].notifier();
-		players[1].notifier();
+		abortedGame = true;
 		broadcast(ServerMessages.CHAT + player.getClientName()
 				+ " could not handle the pressure and gave up.");
-		broadcast(Server.ENDGAME);
+		if (gameStarted) {
+			int[] scores = board.determineScores();
+			board.quitGame();
+			players[0].notifier();
+			players[1].notifier();
+			gameStarted = false;
+			if (players[0].equals(player)) {
+				scores[0] = 0;
+				broadcast(ServerMessages.quitGame(scores[1], scores[0], players[1], players[0]));
+			} else {
+				scores[1] = 0;
+				broadcast(ServerMessages.quitGame(scores[0], scores[1], players[0], players[1]));
+			}
+		}
 	}
 
 	/** Broadcasts chat message from given player to all the players in the game. */

@@ -8,7 +8,7 @@ import game.players.Player;
 
 public class OfflineGO {
 	final static String USAGE = "USAGE: " + OfflineGO.class.getName()
-			+ " <name p0> <name p1> <board size>";
+			+ " <name p0> <name p1> <board size> \nEnter -N as name to construct a computerplayer.";
 
 	public static void main(String[] args) {
 		// input <name p1> <name p2> <board size>

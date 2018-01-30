@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Vector;
 import com.nedap.go.gui.GoGUIIntegrator;
 
 public class Board {
 	private int dimension;
 	private Stone[][] board;
+	private int[] numberStones;
 	private int passCounter;
 	private boolean enabledGUI;
 	private boolean enabledHistory;
@@ -24,15 +24,18 @@ public class Board {
 	 * @param dim dimension of the board */
 	// @requires dim > 0
 	public Board(int dim, boolean enableGUI, boolean enableHistory) {
-		groups = new Vector<>();
+		groups = new ArrayList<>();
 		areas = new ArrayList<>();
-		history = new Vector<>();
+		history = new ArrayList<>();
+		numberStones = new int[2];
 
 		dimension = dim;
 		enabledGUI = enableGUI;
 		enabledHistory = enableHistory;
 		passCounter = 0;
 		board = new Stone[dimension][dimension];
+		numberStones[0] = (int) Math.ceil((dimension * dimension) / 2.0);
+		numberStones[1] = (int) Math.floor((dimension * dimension) / 2.0);
 		for (int x = 0; x < dimension; x++) {
 			for (int y = 0; y < dimension; y++) {
 				board[x][y] = Stone.EMPTY;
@@ -116,9 +119,23 @@ public class Board {
 		return isFull;
 	}
 
+	public int[] getNumberStones() {
+		return numberStones;
+	}
+
+	public boolean stonesLeft() {
+		return numberStones[0] > 0 && numberStones[0] > 0;
+	}
+
 	/** Adds a stone on a node. */
 	public void addStone(int x, int y, Stone stone) {
 		board[x][y] = stone;
+		if (stone.equals(Stone.BLACK)) {
+			numberStones[0] -= 1;
+		} else {
+			numberStones[1] -= 1;
+		}
+
 		if (enabledGUI) {
 			goGUI.addStone(y, x, stone.equals(Stone.WHITE));
 		}
@@ -259,7 +276,7 @@ public class Board {
 
 	/** Checks if a node is on the board. */
 	public boolean gameOver() {
-		return passCounter > 1 || playerQuits;
+		return passCounter > 1 || playerQuits || !stonesLeft();
 	}
 
 	/** Determines the scores of the players. */
@@ -385,6 +402,7 @@ public class Board {
 				board[x][y] = Stone.EMPTY;
 			}
 		}
+
 		if (enabledGUI) {
 			goGUI.clearBoard();
 			goGUI.setBoardSize(dimension);

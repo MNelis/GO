@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Observable;
 import java.util.Observer;
-
 import client.model.GOClient;
 
 public class GOClientTUI implements Observer, ClientView {
@@ -25,12 +24,14 @@ public class GOClientTUI implements Observer, ClientView {
 	}
 
 	/** Prints given message on the TUI. */
-	public synchronized void print(String msg) {
-		System.out.println(msg);
+	public void print(String msg) {
+		if (!msg.equals("")) {
+			System.out.println(msg);
+		}
 	}
 
 	/** Prints given error message on the TUI. */
-	public synchronized void error(String msg) {
+	public void error(String msg) {
 		System.err.println(msg);
 	}
 
