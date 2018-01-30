@@ -19,8 +19,7 @@ public class Board {
 	private List<Board> history;
 	private boolean playerQuits = false;
 
-	/** Initiates new square board with given dimension. Makes al fields empty.
-	 * 
+	/** Initiates new square board with given dimension. Makes all fields empty.
 	 * @param dim dimension of the board */
 	// @requires dim > 0
 	public Board(int dim, boolean enableGUI, boolean enableHistory) {
@@ -36,9 +35,9 @@ public class Board {
 		board = new Stone[dimension][dimension];
 		numberStones[0] = (int) Math.ceil((dimension * dimension) / 2.0);
 		numberStones[1] = (int) Math.floor((dimension * dimension) / 2.0);
-		for (int x = 0; x < dimension; x++) {
-			for (int y = 0; y < dimension; y++) {
-				board[x][y] = Stone.EMPTY;
+		for (int r = 0; r < dimension; r++) {
+			for (int c = 0; c < dimension; c++) {
+				board[r][c] = Stone.EMPTY;
 			}
 		}
 		if (enabledGUI) {
@@ -50,7 +49,8 @@ public class Board {
 		}
 	}
 
-	/** Makes deep copy of the board. */
+	/** Makes deep copy of the board.
+	 * @return deepCopy */
 	public Board deepCopy() {
 		Board copyBoard = new Board(dimension, false, false);
 		for (int i = 0; i < dimension; i++) {
@@ -68,35 +68,54 @@ public class Board {
 		return copyBoard;
 	}
 
-	/** Checks if a node is on the board. */
-	public boolean isNode(int x, int y) {
-		return (0 <= x && x < dimension) && (0 <= y && y < dimension);
+	/** Checks if a node is on the board.
+	 * @param r row.
+	 * @param c column.
+	 * @return true if it is a node on the board, false otherwise. */
+	public boolean isNode(int r, int c) {
+		return (0 <= r && r < dimension) && (0 <= c && c < dimension);
 	}
 
-	/** Gets the stone of a given node. */
-	public Stone getStone(int x, int y) {
-		return board[x][y];
+	/** Gets the stone of a given node.
+	 * @param r row.
+	 * @param c column.
+	 * @return BLACK, WHITE, or EMPTY. */
+	public Stone getStone(int r, int c) {
+		return board[r][c];
 	}
 
-	/** Checks if a node is empty. */
-	public boolean isEmpty(int x, int y) {
-		return board[x][y] == Stone.EMPTY;
+	/** Checks if a node is empty.
+	 * @param r row.
+	 * @param c column.
+	 * @return true if node is empty, false otherwise. */
+	public boolean isEmpty(int r, int c) {
+		return board[r][c] == Stone.EMPTY;
 	}
 
-	/** Checks if a node is on the board and empty. */
-	public boolean isValid(int x, int y, Stone stone) {
+	/** Checks is the given move is valid.
+	 * @param r row.
+	 * @param c column.
+	 * @param color color of the stone.
+	 * @return true if valid, false otherwise. */
+	public boolean isValid(int r, int c, Stone color) {
 		if (enabledHistory) {
-			return isNode(x, y) && isEmpty(x, y) && !isFull() && koRule(x, y, stone);
+			return isNode(r, c) && isEmpty(r, c) && !isFull() && koRule(r, c, color);
 		} else {
-			return isNode(x, y) && isEmpty(x, y) && !isFull();
+			return isNode(r, c) && isEmpty(r, c) && !isFull();
 		}
 
 	}
 
-	public boolean koRule(int x, int y, Stone stone) {
+	/** Checks is the given move is does not create a previous board situation.
+	 * @param r row.
+	 * @param c column.
+	 * @param color color of the stone.
+	 * @return true if it does not create a previous board situation, false
+	 *         otherwise. */
+	public boolean koRule(int r, int c, Stone color) {
 		boolean koRule = true;
 		Board copyBoard = deepCopy();
-		copyBoard.addStone(x, y, stone);
+		copyBoard.addStone(r, c, color);
 		for (Board b : history) {
 			if (b.equals(copyBoard)) {
 				koRule = false;
@@ -106,11 +125,13 @@ public class Board {
 		return koRule;
 	}
 
+	/** Checks if the board is full.
+	 * @return true if full, false otherwise. */
 	private boolean isFull() {
 		boolean isFull = true;
-		for (int x = 0; x < dimension; x++) {
-			for (int y = 0; y < dimension; y++) {
-				if (isEmpty(x, y)) {
+		for (int r = 0; r < dimension; r++) {
+			for (int c = 0; c < dimension; c++) {
+				if (isEmpty(r, c)) {
 					isFull = false;
 					break;
 				}
@@ -119,45 +140,54 @@ public class Board {
 		return isFull;
 	}
 
+	/** Gets the number of remaining stones of both colors.
+	 * @return array with number of BLACK stones and number of WHITE stones. */
 	public int[] getNumberStones() {
 		return numberStones;
 	}
 
+	/** Checks if both colors have stones left.
+	 * @return true if both color have stones left, false otherwise. */
 	public boolean stonesLeft() {
 		return numberStones[0] > 0 && numberStones[0] > 0;
 	}
 
-	/** Adds a stone on a node. */
-	public void addStone(int x, int y, Stone stone) {
-		board[x][y] = stone;
-		if (stone.equals(Stone.BLACK)) {
+	/** Adds a stone on a node.
+	 * @param r row.
+	 * @param c column.
+	 * @param color color of the stone. */
+	public void addStone(int r, int c, Stone color) {
+		board[r][c] = color;
+		if (color.equals(Stone.BLACK)) {
 			numberStones[0] -= 1;
 		} else {
 			numberStones[1] -= 1;
 		}
-
 		if (enabledGUI) {
-			goGUI.addStone(y, x, stone.equals(Stone.WHITE));
+			goGUI.addStone(c, r, color.equals(Stone.WHITE));
 		}
-		updateGroups(x, y, stone);
-		checkCaptures(x, y, stone);
+		updateGroups(r, c, color);
+		checkCaptures(r, c, color);
 		if (enabledHistory) {
 			history.add(deepCopy());
 		}
 	}
 
-	/** Updates the groups on the board around the added stone. */
-	public void updateGroups(int x, int y, Stone stone) {
+	/** Updates the groups on the board around the added stone.
+	 * @param r row.
+	 * @param c column.
+	 * @param color color of the added stone. */
+	public void updateGroups(int r, int c, Stone color) {
 		Group addedTo = null;
 		List<Group> toRemove = new ArrayList<>();
-		Integer[][] neighborStones = {{x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1}};
+		Integer[][] neighborStones = {{r - 1, c}, {r + 1, c}, {r, c - 1}, {r, c + 1}};
 
 		for (Integer[] s : neighborStones) {
-			if (isNode(s[0], s[1]) && getStone(s[0], s[1]) == stone) {
+			if (isNode(s[0], s[1]) && getStone(s[0], s[1]) == color) {
 				for (Group g : groups) {
 					if (g.containsStone(s)) {
 						if (addedTo == null) {
-							g.addStone(x, y);
+							g.addStone(r, c);
 							addedTo = g;
 						} else if (g.containsStone(s) && !addedTo.containsStone(s)) {
 							addedTo.joinGroup(g);
@@ -171,28 +201,27 @@ public class Board {
 		}
 		// Creates new group, if stone not added to existing group.
 		if (addedTo == null) {
-			Group group = new Group(this, stone);
-			group.addStone(x, y);
+			Group group = new Group(this, color);
+			group.addStone(r, c);
 			groups.add(group);
 		}
 		toRemove.forEach(group -> group.emptyList());
 		toRemove.forEach(group -> removeGroup(group));
 	}
 
-	/** Checks if the added stone captures a group or is captured intself. */
-	public void checkCaptures(int x, int y, Stone stone) {
-		Integer[][] neighborStones = {{x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1}};
-		// List<Group> toRemove = new ArrayList<>();
+	/** Checks if the added stone captures a group or is captured itself.
+	 * @param r row.
+	 * @param c column.
+	 * @param color color of the stone. */
+	public void checkCaptures(int r, int c, Stone color) {
+		Integer[][] neighborStones = {{r - 1, c}, {r + 1, c}, {r, c - 1}, {r, c + 1}};
 		boolean capturesGroup = false;
-
-		// first checks
 		for (Integer[] s : neighborStones) {
-			if (isNode(s[0], s[1]) && getStone(s[0], s[1]) == stone.other()) {
+			if (isNode(s[0], s[1]) && getStone(s[0], s[1]) == color.other()) {
 				Iterator<Group> g = groups.iterator();
 				while (g.hasNext()) {
 					Group group = g.next();
 					if (group.containsStone(s) && group.getLiberties() == 0) {
-						// System.out.println("capture");
 						capturesGroup = true;
 						removeGroup(group);
 						group.emptyList();
@@ -205,8 +234,7 @@ public class Board {
 			Iterator<Group> g = groups.iterator();
 			while (g.hasNext()) {
 				Group group = g.next();
-				if (group.containsStone(x, y) && group.getLiberties() == 0) {
-					// System.out.println("suicide");
+				if (group.containsStone(r, c) && group.getLiberties() == 0) {
 					removeGroup(group);
 					group.emptyList();
 					break;
@@ -215,17 +243,20 @@ public class Board {
 		}
 	}
 
-	/** Removes a stone from a node. */
-	public void removeStone(int x, int y) {
-		if (!isEmpty(x, y)) {
-			board[x][y] = Stone.EMPTY;
+	/** Removes a stone from a node.
+	 * @param r row.
+	 * @param c column. */
+	public void removeStone(int r, int c) {
+		if (!isEmpty(r, c)) {
+			board[r][c] = Stone.EMPTY;
 			if (enabledGUI) {
-				goGUI.removeStone(y, x);
+				goGUI.removeStone(c, r);
 			}
 		}
 	}
 
-	/** Removes a stone from a node. */
+	/** Removes all stones from a group.
+	 * @param group group. */
 	public void removeGroup(Group group) {
 		for (Integer[] s : group.getList()) {
 			removeStone(s[0], s[1]);
@@ -233,11 +264,14 @@ public class Board {
 		groups.remove(group);
 	}
 
-	/** Gets the number of liberties of a stone on a given location. */
-	public int getLiberties(int x, int y) {
+	/** Gets the number of liberties of a stone on a given location.
+	 * @param r row.
+	 * @param c column.
+	 * @return number of liberties. */
+	public int getLiberties(int r, int c) {
 		int numberOfLiberties = 0;
-		Integer[][] neighborStones = {{x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1}};
-		if (isNode(x, y) && isEmpty(x, y)) {
+		Integer[][] neighborStones = {{r - 1, c}, {r + 1, c}, {r, c - 1}, {r, c + 1}};
+		if (isNode(r, c) && isEmpty(r, c)) {
 			numberOfLiberties = -1;
 		} else {
 			for (Integer[] s : neighborStones) {
@@ -256,6 +290,8 @@ public class Board {
 				removeStone(x, y);
 			}
 		}
+		history.clear();
+		groups.clear();
 	}
 
 	/** Increases a counter which keeps track of the number of consecutive
@@ -269,25 +305,28 @@ public class Board {
 		passCounter = 0;
 	}
 
-	/** Gets the current count of the PASS-counter. */
+	/** Gets the current count of the PASS-counter.
+	 * @return current count. */
 	public int getPassCounter() {
 		return passCounter;
 	}
 
-	/** Checks if a node is on the board. */
+	/** Checks if a node is on the board.
+	 * @return true if game over, false otherwise. */
 	public boolean gameOver() {
 		return passCounter > 1 || playerQuits || !stonesLeft();
 	}
 
-	/** Determines the scores of the players. */
+	/** Determines the scores of the players.
+	 * @return array with scores of BLACK and WHITE. */
 	public int[] determineScores() {
 		int scoreBLACK = 0;
 		int scoreWHITE = 0;
-		for (int x = 0; x < dimension; x++) {
-			for (int y = 0; y < dimension; y++) {
-				if (isEmpty(x, y)) {
-					Area area = updateAreas(x, y);
-					Integer[][] neighborStones = {{x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1}};
+		for (int r = 0; r < dimension; r++) {
+			for (int c = 0; c < dimension; c++) {
+				if (isEmpty(r, c)) {
+					Area area = updateAreas(r, c);
+					Integer[][] neighborStones = {{r - 1, c}, {r + 1, c}, {r, c - 1}, {r, c + 1}};
 					for (Integer[] s : neighborStones) {
 						if (isNode(s[0], s[1]) && !isEmpty(s[0], s[1])) {
 							if (!area.getStoneArea() && area.getStone().equals(Stone.EMPTY)) {
@@ -299,7 +338,7 @@ public class Board {
 							}
 						}
 					}
-				} else if (getStone(x, y).equals(Stone.BLACK)) {
+				} else if (getStone(r, c).equals(Stone.BLACK)) {
 					scoreBLACK++;
 				} else {
 					scoreWHITE++;
@@ -324,17 +363,21 @@ public class Board {
 		return new int[]{scoreBLACK, scoreWHITE};
 	}
 
-	public Area updateAreas(int x, int y) {
+	/** Updates the areas.
+	 * @param r row.
+	 * @param c column.
+	 * @return area of the node. */
+	public Area updateAreas(int r, int c) {
 		Area addedTo = null;
 		List<Area> toRemove = new ArrayList<>();
-		Integer[][] neighborNodes = {{x - 1, y}, {x, y - 1}};
+		Integer[][] neighborNodes = {{r - 1, c}, {r, c - 1}};
 
 		for (Integer[] s : neighborNodes) {
 			if (isNode(s[0], s[1]) && getStone(s[0], s[1]) == Stone.EMPTY) {
 				for (Area a : areas) {
 					if (a.containsNode(s)) {
 						if (addedTo == null) {
-							a.addNode(x, y);
+							a.addNode(r, c);
 							addedTo = a;
 						} else if (a.containsNode(s) && !addedTo.containsNode(s)) {
 							addedTo.joinArea(a);
@@ -349,7 +392,7 @@ public class Board {
 		// Creates new area, if node not added to existing area.
 		if (addedTo == null) {
 			Area area = new Area();
-			area.addNode(x, y);
+			area.addNode(r, c);
 			areas.add(area);
 			return area;
 		} else {
@@ -357,11 +400,35 @@ public class Board {
 			toRemove.forEach(area -> areas.remove(area));
 			return addedTo;
 		}
-
 	}
 
+	/** Sets playerQuits to true. */
 	public void quitGame() {
 		playerQuits = true;
+	}
+
+	/** Sets dimension of the board.
+	 * @param dim dimension. */
+	public void setDimension(int dim) {
+		dimension = dim;
+		reset();
+		board = new Stone[dimension][dimension];
+		for (int x = 0; x < dimension; x++) {
+			for (int y = 0; y < dimension; y++) {
+				board[x][y] = Stone.EMPTY;
+			}
+		}
+
+		if (enabledGUI) {
+			goGUI.clearBoard();
+			goGUI.setBoardSize(dimension);
+		}
+	}
+
+	/** Gets dimension of the board.
+	 * @return dimension. */
+	public int getDimension() {
+		return dimension;
 	}
 
 	@Override
@@ -393,24 +460,4 @@ public class Board {
 		}
 		return equal;
 	}
-
-	public void setDimension(int dim) {
-		dimension = dim;
-		board = new Stone[dimension][dimension];
-		for (int x = 0; x < dimension; x++) {
-			for (int y = 0; y < dimension; y++) {
-				board[x][y] = Stone.EMPTY;
-			}
-		}
-
-		if (enabledGUI) {
-			goGUI.clearBoard();
-			goGUI.setBoardSize(dimension);
-		}
-	}
-
-	public int getDimension() {
-		return dimension;
-	}
-
 }

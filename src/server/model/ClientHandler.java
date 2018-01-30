@@ -31,7 +31,10 @@ public class ClientHandler extends Thread {
 	private boolean gameStarted = false;
 	private boolean currentTurn = false;
 
-	/** Constructs client handler. */
+	/** Constructs client handler.
+	 * @param server given server.
+	 * @param sock given socket.
+	 * @throws IOException */
 	public ClientHandler(GOServer server, Socket sock) throws IOException {
 		this.server = server;
 		this.sock = sock;
@@ -39,6 +42,8 @@ public class ClientHandler extends Thread {
 		out = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream()));
 	}
 
+	/** Initiates connection with the client.
+	 * @throws IOException */
 	public void announce() throws IOException {
 		String initialMessage = in.readLine();
 		String[] splitMessage = initialMessage.split("\\" + General.DELIMITER1);
@@ -95,13 +100,14 @@ public class ClientHandler extends Thread {
 	}
 
 	/** Waits for input of the move. */
-	private void waitForInputs() throws InterruptedException {
+	private void waitForMove() throws InterruptedException {
 		synchronized (this) {
 			wait();
 		}
 	}
 
-	/** Sends message to client. */
+	/** Sends message to client.
+	 * @param msg message. */
 	public void sendMessage(String msg) {
 		try {
 			out.write(msg);
@@ -112,22 +118,25 @@ public class ClientHandler extends Thread {
 		}
 	}
 
-	/** Gets name of client. */
+	/** Gets name of client.
+	 * @return clientName. */
 	public String getClientName() {
 		return clientName;
 	}
 
-	/** Sets a game handler to the client handler (thus indirectly add client to
-	 * game handler). */
+	/** Sets a game to the client handler (thus indirectly add client to game).
+	 * @param game game. */
 	public void setGame(GOGame game) {
 		this.game = game;
 		inGame = true;
 	}
 
+	/** Sets startedGame to true. */
 	public void startedGame() {
 		gameStarted = true;
 	}
 
+	/** Removes game from client. */
 	public void removeGame() {
 		this.game = null;
 		inGame = false;
@@ -137,20 +146,21 @@ public class ClientHandler extends Thread {
 		sendMessage(ServerMessages.CHAT + "Welcome back in the lobby.");
 	}
 
-	/** @throws InterruptedException */
+	/** Sets currentTurn to true while until client makes a move.
+	 * @throws InterruptedException */
 	public void makeMove() throws InterruptedException {
 		currentTurn = true;
-		waitForInputs();
+		waitForMove();
 		currentTurn = false;
 	}
 
-	/** Shutdown. */
+	/** Tells server that client has left. */
 	private void shutdown() {
 		server.removeFromLobby(this);
 		server.print(clientName + " has left.");
 	}
 
-	/** Disconnect. */
+	/** Disconnect the client. */
 	private void disconnect() {
 		try {
 			sock.close();
@@ -160,10 +170,9 @@ public class ClientHandler extends Thread {
 	}
 
 	/** Processes the input from client to server.
-	 * 
+	 * @param input input message.
 	 * @throws UnknownCommandException
 	 * @throws OtherException */
-	// TODO do we want to log every action from all clients?
 	private void processInput(String input) throws UnknownCommandException, OtherException {
 		String[] splitInput = input.split("\\" + General.DELIMITER1);
 
@@ -173,7 +182,7 @@ public class ClientHandler extends Thread {
 					game.sendChat(this, input.substring(5));
 					break;
 
-				case "EXIT":
+				case Client.EXIT:
 					game.quit(this);
 					shutdown();
 					disconnect();
@@ -209,7 +218,7 @@ public class ClientHandler extends Thread {
 					game.sendChat(this, input.substring(5));
 					break;
 
-				case "EXIT":
+				case Client.EXIT:
 					shutdown();
 					disconnect();
 					break;
@@ -253,9 +262,12 @@ public class ClientHandler extends Thread {
 					server.broadcast(Client.CHAT + General.DELIMITER1 + this.getClientName()
 							+ General.DELIMITER1 + input.substring(5));
 					break;
-				case "EXIT":
+				case Client.EXIT:
 					shutdown();
 					disconnect();
+					break;
+					
+				case Client.MOVE:
 					break;
 
 				case Client.QUIT:
@@ -285,6 +297,7 @@ public class ClientHandler extends Thread {
 
 	}
 
+	/** Notifies that move has been made. */
 	public void notifier() {
 		synchronized (this) {
 			notifyAll();

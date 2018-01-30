@@ -20,6 +20,9 @@ public class GOGame extends Thread {
 	private boolean gameStarted = false;
 	private boolean abortedGame = false;
 
+	/** Construct new GOGame with two players.
+	 * @param p1
+	 * @param p2 */
 	public GOGame(ClientHandler p1, ClientHandler p2) {
 		players[0] = p1;
 		players[1] = p2;
@@ -39,7 +42,7 @@ public class GOGame extends Thread {
 				ServerMessages.CHAT + "Waiting on the settings. These are determined by "
 						+ players[0].getClientName() + ".");
 		try {
-			waitForInputs();
+			waitForSettings();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -60,7 +63,9 @@ public class GOGame extends Thread {
 		}
 	}
 
-	/** Sets the settings. */
+	/** Sets the settings.
+	 * @param color color of the stone.
+	 * @param size dimension of the board. */
 	public void setSettings(String color, int size) {
 		dim = size;
 		if (color.equals(General.BLACK)) {
@@ -76,7 +81,8 @@ public class GOGame extends Thread {
 		}
 	}
 
-	/** Sends message to all player in the game. */
+	/** Sends message to all player in the game.
+	 * @param msg message */
 	private void broadcast(String msg) {
 		for (ClientHandler p : players) {
 			p.sendMessage(msg);
@@ -84,14 +90,13 @@ public class GOGame extends Thread {
 	}
 
 	/** Waits for input of the settings. */
-	private void waitForInputs() throws InterruptedException {
+	private void waitForSettings() throws InterruptedException {
 		synchronized (this) {
 			wait();
 		}
 	}
 
 	/** Starts game.
-	 * 
 	 * @throws InterruptedException */
 	private void startGame() throws InterruptedException {
 		players[0].startedGame();
@@ -110,6 +115,8 @@ public class GOGame extends Thread {
 		play();
 	}
 
+	/** Plays the game until it is game over.
+	 * @throws InterruptedException */
 	private void play() throws InterruptedException {
 		while (!board.gameOver()) {
 			players[current].makeMove();
@@ -124,7 +131,7 @@ public class GOGame extends Thread {
 					broadcast(ServerMessages.finishedGame(scores[0], scores[1], players[0],
 							players[1]));
 				} else {
-					broadcast(ServerMessages.finishedGame(scores[1], scores[0], players[1],
+					broadcast(ServerMessages.finishedGame(scores[0], scores[1], players[1],
 							players[0]));
 				}
 			} else {
@@ -132,31 +139,18 @@ public class GOGame extends Thread {
 					broadcast(ServerMessages.finishedGame(scores[1], scores[0], players[1],
 							players[0]));
 				} else {
-					broadcast(ServerMessages.finishedGame(scores[0], scores[1], players[0],
+					broadcast(ServerMessages.finishedGame(scores[1], scores[0], players[0],
 							players[1]));
 				}
 			}
 		}
-
-		//
-
-		// {
-		// broadcast(ServerMessages.CHAT + "SCORES\n" + ServerMessages.CHAT
-		// + players[0].getClientName() + ": \t " + scores[0] + "\n" +
-		// ServerMessages.CHAT
-		// + players[1].getClientName() + ": \t " + scores[1] + "\n");
-		// } else {
-		// broadcast(ServerMessages.CHAT + "SCORES\n" + ServerMessages.CHAT
-		// + players[0].getClientName() + ": \t " + scores[1] + "\n" +
-		// ServerMessages.CHAT
-		// + players[1].getClientName() + ": \t " + scores[0] + "\n");
-		// }
 		players[0].removeGame();
 		players[1].removeGame();
 	}
 
-	/** Currently: broadcasts a move made by a client in correct format.
-	 * 
+	/** Broadcasts a move made by a player in correct format.
+	 * @param player player.
+	 * @param move move.
 	 * @throws OtherException */
 	public void makeMove(ClientHandler player, String move) throws OtherException {
 		String[] splitMove = move.split(General.DELIMITER2);
@@ -166,7 +160,6 @@ public class GOGame extends Thread {
 		} else {
 			color = colors[1];
 		}
-
 		if (splitMove[0].equals(Client.PASS)) {
 			board.increasePassCounter();
 			broadcast(Server.TURN + General.DELIMITER1 + player.getClientName() + General.DELIMITER1
@@ -186,10 +179,10 @@ public class GOGame extends Thread {
 				throw new OtherException(ServerMessages.INVALIDMOVE);
 			}
 		}
-
 	}
 
-	/** Handles a player who quits the game. */
+	/** Handles a player who quits the game.
+	 * @param player player who quits. */
 	public void quit(ClientHandler player) {
 		abortedGame = true;
 		broadcast(ServerMessages.CHAT + player.getClientName()
@@ -210,13 +203,17 @@ public class GOGame extends Thread {
 		}
 	}
 
-	/** Broadcasts chat message from given player to all the players in the game. */
+	/** Broadcasts chat message from given player to all the players in the game.
+	 * @param player player.
+	 * @param msg message. */
 	public void sendChat(ClientHandler player, String msg) {
 		broadcast(Client.CHAT + General.DELIMITER1 + player.getClientName() + General.DELIMITER1
 				+ msg);
 	}
 
-	/** Returns the other player than the given player (Assumes 2-player game). */
+	/** Returns the other player than the given player (Assumes 2-player game).
+	 * @param player given player.
+	 * @return other player. */
 	private ClientHandler other(ClientHandler player) {
 		if (players[0].equals(player)) {
 			return players[1];

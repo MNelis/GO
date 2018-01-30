@@ -12,8 +12,9 @@ public class NaiveStrategy implements Strategy {
 
 	public Integer[] determineMove(Board board, Stone color) {
 		List<Integer[]> validMoves = new ArrayList<>();
-		for (int r = 0; r < board.getDimension(); r++) {
-			for (int c = 0; c < board.getDimension(); c++) {
+		int dimension = board.getDimension();
+		for (int r = 0; r < dimension; r++) {
+			for (int c = 0; c < dimension; c++) {
 				if (board.isValid(r, c, color)) {
 					validMoves.add(new Integer[]{r, c, 0});
 				}

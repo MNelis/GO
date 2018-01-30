@@ -28,7 +28,8 @@ public class GOClient extends Thread {
 	private static final String STARTAI = "STARTAI";
 	private static final String ENDCAI = "ENDAI";
 
-	/** Starts the client application. */
+	/** Starts the client application and connects to server.
+	 * @param args */
 	public static void main(String[] args) {
 		if (args.length != 2) {
 			System.out.println(USAGE);
@@ -69,7 +70,11 @@ public class GOClient extends Thread {
 	private Player computerPlayer;
 	private boolean humanPlayer = true;
 
-	/** Constructs new client with TUI. */
+	/** Constructs new client with TUI.
+	 * @param name name of the client.
+	 * @param host address of the server.
+	 * @param port port number.
+	 * @throws IOException */
 	public GOClient(String name, InetAddress host, int port) throws IOException {
 		this.clientName = name;
 		sock = new Socket(host, port);
@@ -93,7 +98,8 @@ public class GOClient extends Thread {
 		}
 	}
 
-	/** Processes and sends given message from client to server. */
+	/** Processes and sends given message from client to server.
+	 * @param msg */
 	public void sendMessage(String msg) {
 		try {
 			out.write(processOutput(msg));
@@ -106,7 +112,7 @@ public class GOClient extends Thread {
 		}
 	}
 
-	// closes socket
+	/** Closes socket and terminates GOClient instance. */
 	private void shutdown() {
 		print("  Closing the socket connection.");
 		try {
@@ -117,29 +123,19 @@ public class GOClient extends Thread {
 		System.exit(0);
 	}
 
-	// prints on tui
-	private void print(String message) {
-		goTUI.print(message);
+	/** Prints message on TUI.
+	 * @param msg */
+	private void print(String msg) {
+		goTUI.print(msg);
 	}
 
-	private void error(String message) {
-		goTUI.error(message);
+	/** Prints error message on TUI.
+	 * @param msg */
+	private void error(String msg) {
+		goTUI.error(msg);
 	}
 
-	public static String readString(String tekst) {
-		System.out.print(tekst);
-		String antw = null;
-		try {
-			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-			antw = in.readLine();
-		} catch (IOException e) {
-		}
-		return (antw == null) ? "" : antw;
-	}
-
-	//
 	/** Processes input from server to something readable for client.
-	 * 
 	 * @param msg message from the server.
 	 * @return processed message from the server.
 	 * @throws InterruptedException
@@ -167,11 +163,6 @@ public class GOClient extends Thread {
 						stone = Stone.BLACK;
 						computerPlayer = new ComputerPlayer(stone, new NaiveStrategy());
 						result = ClientMessages.startMessage(msg);
-						// if (humanPlayer) {
-						// result += "\n" + " Enter a move (MOVE <row> <column> or MOVE PASS):";
-						// } else {
-						// Thread.sleep(10);
-						// result += "\n" + determineMoveAI(board);
 						// }
 					} else {
 						stone = Stone.WHITE;
@@ -185,7 +176,7 @@ public class GOClient extends Thread {
 				return result;
 
 			case Server.TURN:
-				Thread.sleep(10);
+				Thread.sleep(30);
 				int x;
 				int y;
 				String[] splitMove = splitMessage[2].split(General.DELIMITER2);
@@ -208,14 +199,12 @@ public class GOClient extends Thread {
 				}
 
 			default:
-				error("?");
 				return "";
 		}
 	}
 
 	/** Processes input given by the client to a correct format (to match the
 	 * protocol).
-	 * 
 	 * @param msg the message provided by the client.
 	 * @return a adjusted message.
 	 * @throws InvalidMoveException
@@ -266,7 +255,6 @@ public class GOClient extends Thread {
 	}
 
 	/** Gets name of the client.
-	 * 
 	 * @return clientName. */
 	public String getClientName() {
 		return clientName;
@@ -274,9 +262,8 @@ public class GOClient extends Thread {
 
 	/** Initializes a board and GUI. Here the current state of the game is
 	 * displayed.
-	 * 
 	 * @param dim */
-	private synchronized void startGame(String dim) {
+	private void startGame(String dim) {
 
 		if (board == null) {
 			board = new Board(Integer.parseInt(dim), true, true);
@@ -286,7 +273,10 @@ public class GOClient extends Thread {
 
 	}
 
-	private synchronized String determineMoveAI(Board b) {
+	/** Determines a move made by the computer player.
+	 * @param b Current board.
+	 * @return move. */
+	private String determineMoveAI(Board b) {
 		Integer[] move = computerPlayer.determineMove(b);
 		if (move[2] == -1) {
 			sendMessage("MOVE PASS");
@@ -299,7 +289,6 @@ public class GOClient extends Thread {
 
 	/** Updates the board and GUI. A stone is added and there may be some stones
 	 * removed due to a capture.
-	 * 
 	 * @param x row of the added stone.
 	 * @param y column of the added stone.
 	 * @param color color of the added stone. */
@@ -307,15 +296,20 @@ public class GOClient extends Thread {
 		board.addStone(x, y, color);
 	}
 
+	/** Sets computer player.
+	 * @param player */
 	public void setPlayer(Player player) {
 		computerPlayer = player;
 	}
 
+	/** Gets computer player.
+	 * @return computerPlayer. */
 	public Player getPlayer() {
 		return computerPlayer;
 	}
 
-	/** Gets TUI. */
+	/** Gets TUI. 
+	 * @return goTUI.*/
 	private ClientView getTUI() {
 		return goTUI;
 	}
