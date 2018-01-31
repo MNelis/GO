@@ -3,13 +3,13 @@
 :black_circle::white_circle:
 
 ### Start the server
-- Open command prompt in the folder target.
-- Enter `java -cp go-1.0-SNAPSHOT.jar server.model.GOServer`
+- Open command prompt in the GO folder.
+- Enter `java -cp go-version1.0.jar server.model.GOServer`
 
 ### Start a client
 For each new client:
-- Open command prompt in the folder target.
-- Enter `java -cp go-1.0-SNAPSHOT.jar client.model.GOClient <name> <host address>`
+- Open command prompt in the GO folder.
+- Enter `java -cp go-version1.0.jar client.model.GOClient <name> <host address>`
 
 #### Using a client
 There are several commands a client can make depending on its status. The user interface will guide the client such that it can use the application without consulting this file.
