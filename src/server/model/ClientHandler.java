@@ -186,7 +186,7 @@ public class ClientHandler extends Thread {
 
 				case Client.EXIT:
 					game.quit(this);
-					shutdown();
+//					shutdown();
 					disconnect();
 					break;
 
@@ -223,7 +223,7 @@ public class ClientHandler extends Thread {
 					break;
 
 				case Client.EXIT:
-					shutdown();
+//					shutdown();
 					disconnect();
 					break;
 
@@ -269,7 +269,7 @@ public class ClientHandler extends Thread {
 					}
 					break;
 				case Client.EXIT:
-					shutdown();
+//					shutdown();
 					disconnect();
 					break;
 
