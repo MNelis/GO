@@ -12,11 +12,11 @@ For each new client:
 #### Using a client
 There are several commands a client can make depending on its status. The user interface will guide the client such that it can use the application without consulting this file.
 
-A client can always use:
+A client can **always** use:
 - `EXIT` to disconnent and close the client application.
 
 
-When a client is in the lobby, it can use the following commands:
+When a client is **in the lobby**, it can use the following commands:
 - `REQUESTGAME` to request a game.
 - `STARTAI` to activate the computer player. 
 - `ENDAI` to deactivate the computer player.
@@ -27,7 +27,7 @@ At the start of the game, the first client who requested a game must determine t
 - `SETTINGS` <BLACK/WHITE> <boardsize> to determine the settings of the game. 
   
   
-When a client is playing a game, it can use the following commands:
+When a client is **playing a game**, it can use the following commands:
 - `MOVE <row> <column>` to place a stone on (row,column).
 - `MOVE PASS` to pass your turn.
 - `QUIT` to quit the game at any time and return to the lobby. You will automatically lose the game.
