@@ -1,5 +1,7 @@
 # GO
 
+:black_circle::white_circle:
+
 ### Start the server
 - Open commandprompt in the folder target.
 - Enter `java -cp go-1.0-SNAPSHOT.jar server.model.GOServer`
