@@ -1,4 +1,4 @@
-package general;
+package client;
 
 import general.Protocol.Client;
 import general.Protocol.General;

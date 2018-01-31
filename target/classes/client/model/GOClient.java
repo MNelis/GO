@@ -10,18 +10,18 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import client.viewer.ClientView;
 import client.viewer.GOClientTUI;
-import errors.InvalidMoveException;
-import errors.OtherException;
-import errors.UnknownCommandException;
 import game.model.Board;
 import game.model.Stone;
 import game.players.ComputerPlayer;
 import game.players.NaiveStrategy;
 import game.players.Player;
-import general.ClientMessages;
+import client.ClientMessages;
 import general.Protocol.Client;
 import general.Protocol.General;
 import general.Protocol.Server;
+import general.errors.InvalidMoveException;
+import general.errors.OtherException;
+import general.errors.UnknownCommandException;
 
 public class GOClient extends Thread {
 	private static final String USAGE = "Usage : " + GOClient.class.getName() + " <name> <address>";

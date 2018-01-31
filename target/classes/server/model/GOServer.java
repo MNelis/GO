@@ -8,10 +8,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import errors.OtherException;
 import game.online.GOGame;
 import general.Protocol.General;
-import general.ServerMessages;
+import general.errors.OtherException;
+import server.ServerMessages;
 
 public class GOServer {
 	private int port;
