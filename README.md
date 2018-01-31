@@ -30,5 +30,7 @@ At the start of the game, the first client who requested a game must determine t
 When a client is **playing a game**, it can use the following commands:
 - `MOVE <row> <column>` to place a stone on (row,column).
 - `MOVE PASS` to pass your turn.
+- `STARTAI` to activate the computer player. 
+- `ENDAI` to deactivate the computer player.
 - `QUIT` to quit the game at any time and return to the lobby. You will automatically lose the game.
 - `CHAT <your message>` to send a message to the other client in the game.
