@@ -20,7 +20,7 @@ When a client is **in the lobby**, it can use the following commands:
 - `REQUESTGAME` to request a game.
 - `STARTAI` to activate the computer player. 
 - `ENDAI` to deactivate the computer player.
-- `CHAT` to send a message to all the other clients in the lobby.
+- `CHAT <your message>` to send a message to all the other clients in the lobby.
 
 
 At the start of the game, the first client who requested a game must determine the settings. The client must choose its own color (black or white) and determine the size of the board. The board size it determined by a single integer between 5 and 19.
@@ -31,4 +31,4 @@ When a client is **playing a game**, it can use the following commands:
 - `MOVE <row> <column>` to place a stone on (row,column).
 - `MOVE PASS` to pass your turn.
 - `QUIT` to quit the game at any time and return to the lobby. You will automatically lose the game.
-- `CHAT` to send a message to the other client in the game.
+- `CHAT <your message>` to send a message to the other client in the game.
