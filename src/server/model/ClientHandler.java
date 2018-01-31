@@ -8,15 +8,15 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-import errors.IncompatibleProtocolException;
-import errors.NameTakenException;
-import errors.OtherException;
-import errors.UnknownCommandException;
 import game.online.GOGame;
 import general.Protocol.Client;
 import general.Protocol.General;
 import general.Protocol.Server;
-import general.ServerMessages;
+import general.errors.IncompatibleProtocolException;
+import general.errors.NameTakenException;
+import general.errors.OtherException;
+import general.errors.UnknownCommandException;
+import server.ServerMessages;
 
 public class ClientHandler extends Thread {
 	private GOServer server;

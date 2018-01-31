@@ -1,4 +1,4 @@
-package general;
+package server;
 
 import general.Protocol.General;
 import general.Protocol.Server;

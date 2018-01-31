@@ -1,12 +1,12 @@
 package game.online;
 
-import errors.OtherException;
 import game.model.Board;
 import game.model.Stone;
 import general.Protocol.Client;
 import general.Protocol.General;
 import general.Protocol.Server;
-import general.ServerMessages;
+import general.errors.OtherException;
+import server.ServerMessages;
 import server.model.ClientHandler;
 
 public class GOGame extends Thread {

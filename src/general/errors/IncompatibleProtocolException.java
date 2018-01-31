@@ -1,4 +1,4 @@
-package errors;
+package general.errors;
 
 import general.Protocol.General;
 import general.Protocol.Server;
