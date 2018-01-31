@@ -411,14 +411,14 @@ public class Board {
 	 * @param dim dimension. */
 	public void setDimension(int dim) {
 		dimension = dim;
-		reset();
+		
 		board = new Stone[dimension][dimension];
 		for (int x = 0; x < dimension; x++) {
 			for (int y = 0; y < dimension; y++) {
 				board[x][y] = Stone.EMPTY;
 			}
 		}
-
+		reset();
 		if (enabledGUI) {
 			goGUI.clearBoard();
 			goGUI.setBoardSize(dimension);

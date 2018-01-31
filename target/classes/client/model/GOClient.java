@@ -176,7 +176,7 @@ public class GOClient extends Thread {
 				return result;
 
 			case Server.TURN:
-				Thread.sleep(10);
+				Thread.sleep(30);
 				int x;
 				int y;
 				String[] splitMove = splitMessage[2].split(General.DELIMITER2);
@@ -199,7 +199,6 @@ public class GOClient extends Thread {
 				}
 
 			default:
-				error("?");
 				return "";
 		}
 	}
@@ -264,7 +263,7 @@ public class GOClient extends Thread {
 	/** Initializes a board and GUI. Here the current state of the game is
 	 * displayed.
 	 * @param dim */
-	private synchronized void startGame(String dim) {
+	private void startGame(String dim) {
 
 		if (board == null) {
 			board = new Board(Integer.parseInt(dim), true, true);
@@ -277,7 +276,7 @@ public class GOClient extends Thread {
 	/** Determines a move made by the computer player.
 	 * @param b Current board.
 	 * @return move. */
-	private synchronized String determineMoveAI(Board b) {
+	private String determineMoveAI(Board b) {
 		Integer[] move = computerPlayer.determineMove(b);
 		if (move[2] == -1) {
 			sendMessage("MOVE PASS");

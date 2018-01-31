@@ -31,7 +31,7 @@ public class ServerMessages {
 			+ "to sent a message to everyone in the lobby.";
 
 	public static final String REQUESTEDGAME = CHAT + "Thank you for requesting a game. "
-			+ "Please wait on a opponent. \n" + CHAT + "Enter QUIT to revoke your request.";
+			+ "Please wait on a opponent. \n";
 	public static final String QUITREQUEST = CHAT + "Game request revoked.";
 
 	public static String welcomeMessage(String name) {

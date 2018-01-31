@@ -23,19 +23,19 @@ public class ClientMessages {
 		String result = "";
 		String[] splitMessage = msg.split("\\" + General.DELIMITER1);
 		if (splitMessage[1].equals(Server.ABORTED)) {
-			result += "The game has been aborted.";
+			result += "  The game has been aborted.";
 		} else if (splitMessage[1].equals(Server.FINISHED)) {
-			result += "The game is finished.";
+			result += "  The game is finished.";
 		} else if (splitMessage[1].equals(Server.TIMEOUT)) {
-			result += "The game has been aborted due to a timeout.";
+			result += "  The game has been aborted due to a timeout.";
 		}
-		result += "\n\n SCORES:";
-		result += "\n" + splitMessage[2] + ":   \t" + splitMessage[3];
-		result += "\n" + splitMessage[4] + ":   \t" + splitMessage[5];
+		result += "\n\n  SCORES";
+		result += "\n  " + splitMessage[2] + ":   \t" + splitMessage[3];
+		result += "\n  " + splitMessage[4] + ":   \t" + splitMessage[5];
 		if (splitMessage[3].equals(splitMessage[5])) {
-			result += "\n It's a draw. There is no winner.";
+			result += "\n  It's a draw. There is no winner.";
 		} else {
-			result += "\n" + splitMessage[2] + " is the winner! \n";
+			result += "\n  " + splitMessage[2] + " is the winner! \n";
 		}
 		return result;
 	}

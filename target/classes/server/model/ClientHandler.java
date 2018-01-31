@@ -182,7 +182,7 @@ public class ClientHandler extends Thread {
 					game.sendChat(this, input.substring(5));
 					break;
 
-				case "EXIT":
+				case Client.EXIT:
 					game.quit(this);
 					shutdown();
 					disconnect();
@@ -218,7 +218,7 @@ public class ClientHandler extends Thread {
 					game.sendChat(this, input.substring(5));
 					break;
 
-				case "EXIT":
+				case Client.EXIT:
 					shutdown();
 					disconnect();
 					break;
@@ -262,9 +262,12 @@ public class ClientHandler extends Thread {
 					server.broadcast(Client.CHAT + General.DELIMITER1 + this.getClientName()
 							+ General.DELIMITER1 + input.substring(5));
 					break;
-				case "EXIT":
+				case Client.EXIT:
 					shutdown();
 					disconnect();
+					break;
+					
+				case Client.MOVE:
 					break;
 
 				case Client.QUIT:

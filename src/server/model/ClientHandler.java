@@ -270,12 +270,12 @@ public class ClientHandler extends Thread {
 				case Client.MOVE:
 					break;
 
-				case Client.QUIT:
-					server.removeRequestedGame(this);
-					server.addToLobby(this);
-					server.print(ServerMessages.quitRequestMessage(clientName));
-					sendMessage(ServerMessages.QUITREQUEST);
-					break;
+//				case Client.QUIT:
+//					server.removeRequestedGame(this);
+//					server.addToLobby(this);
+//					server.print(ServerMessages.quitRequestMessage(clientName));
+//					sendMessage(ServerMessages.QUITREQUEST);
+//					break;
 
 				case Client.REQUESTGAME:
 					if (splitInput.length == 3 && splitInput[1].equals("2")

@@ -290,6 +290,8 @@ public class Board {
 				removeStone(x, y);
 			}
 		}
+		history.clear();
+		groups.clear();
 	}
 
 	/** Increases a counter which keeps track of the number of consecutive
@@ -409,6 +411,7 @@ public class Board {
 	 * @param dim dimension. */
 	public void setDimension(int dim) {
 		dimension = dim;
+		reset();
 		board = new Stone[dimension][dimension];
 		for (int x = 0; x < dimension; x++) {
 			for (int y = 0; y < dimension; y++) {

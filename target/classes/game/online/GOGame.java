@@ -131,7 +131,7 @@ public class GOGame extends Thread {
 					broadcast(ServerMessages.finishedGame(scores[0], scores[1], players[0],
 							players[1]));
 				} else {
-					broadcast(ServerMessages.finishedGame(scores[1], scores[0], players[1],
+					broadcast(ServerMessages.finishedGame(scores[0], scores[1], players[1],
 							players[0]));
 				}
 			} else {
@@ -139,7 +139,7 @@ public class GOGame extends Thread {
 					broadcast(ServerMessages.finishedGame(scores[1], scores[0], players[1],
 							players[0]));
 				} else {
-					broadcast(ServerMessages.finishedGame(scores[0], scores[1], players[0],
+					broadcast(ServerMessages.finishedGame(scores[1], scores[0], players[0],
 							players[1]));
 				}
 			}
