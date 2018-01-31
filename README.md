@@ -26,7 +26,7 @@ When a client is **in the lobby**, it can use the following commands:
 
 
 At the start of the game, the first client who requested a game must determine the settings. The client must choose its own color (black or white) and determine the size of the board. The board size it determined by a single integer between 5 and 19.
-- `SETTINGS` <BLACK/WHITE> <boardsize> to determine the settings of the game. 
+- `SETTINGS <BLACK/WHITE> <boardsize>` to determine the settings of the game. 
   
   
 When a client is **playing a game**, it can use the following commands:
