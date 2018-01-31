@@ -179,7 +179,9 @@ public class ClientHandler extends Thread {
 		if (inGame && gameStarted) {
 			switch (splitInput[0]) {
 				case Client.CHAT:
-					game.sendChat(this, input.substring(5));
+					if (input.length() > 4) {
+						game.sendChat(this, input.substring(5));
+					}
 					break;
 
 				case Client.EXIT:
@@ -215,7 +217,9 @@ public class ClientHandler extends Thread {
 		} else if (inGame && !gameStarted) {
 			switch (splitInput[0]) {
 				case Client.CHAT:
-					game.sendChat(this, input.substring(5));
+					if (input.length() > 4) {
+						game.sendChat(this, input.substring(5));
+					}
 					break;
 
 				case Client.EXIT:
@@ -259,23 +263,25 @@ public class ClientHandler extends Thread {
 		} else {
 			switch (splitInput[0]) {
 				case Client.CHAT:
-					server.broadcast(Client.CHAT + General.DELIMITER1 + this.getClientName()
-							+ General.DELIMITER1 + input.substring(5));
+					if (input.length() > 4) {
+						server.broadcast(Client.CHAT + General.DELIMITER1 + this.getClientName()
+								+ General.DELIMITER1 + input.substring(5));
+					}
 					break;
 				case Client.EXIT:
 					shutdown();
 					disconnect();
 					break;
-					
+
 				case Client.MOVE:
 					break;
 
-//				case Client.QUIT:
-//					server.removeRequestedGame(this);
-//					server.addToLobby(this);
-//					server.print(ServerMessages.quitRequestMessage(clientName));
-//					sendMessage(ServerMessages.QUITREQUEST);
-//					break;
+				// case Client.QUIT:
+				// server.removeRequestedGame(this);
+				// server.addToLobby(this);
+				// server.print(ServerMessages.quitRequestMessage(clientName));
+				// sendMessage(ServerMessages.QUITREQUEST);
+				// break;
 
 				case Client.REQUESTGAME:
 					if (splitInput.length == 3 && splitInput[1].equals("2")
