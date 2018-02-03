@@ -9,17 +9,23 @@ public class ClientMessages {
 	// Input for the client.
 	public static String chatMessage(String msg) {
 		String[] splitMessage = msg.split("\\" + General.DELIMITER1);
-		if (splitMessage[1].equals("  ")) {
-			return splitMessage[1] + (msg.replaceFirst("\\" + General.DELIMITER1, " "))
-					.substring(splitMessage[1].length() + 6);
-		} else {
-			return splitMessage[1] + ": " + (msg.replaceFirst("\\" + General.DELIMITER1, " "))
-					.substring(splitMessage[1].length() + 6);
-		}
+		if (splitMessage.length == 3) {
+			if (splitMessage[1].equals("  ")) {
+				return splitMessage[1] + splitMessage[2];
+						//(msg.replaceFirst("\\" + General.DELIMITER1, " "))
+						//.substring(splitMessage[1].length() + 6);
 
+			} else {
+				return splitMessage[1] + ": " + splitMessage[2];
+				// (msg.replaceFirst("\\" + General.DELIMITER1, " "))
+				// .substring(splitMessage[1].length() + 6);
+			}
+		} else {
+			return "  You received a invalid CHAT message."; 
+		}
 	}
 
-	public static String endGameMessage(String msg) {
+	public static String endGameMessage(String msg, String clientName) {
 		String result = "";
 		String[] splitMessage = msg.split("\\" + General.DELIMITER1);
 		if (splitMessage[1].equals(Server.ABORTED)) {
@@ -33,9 +39,15 @@ public class ClientMessages {
 		result += "\n  " + splitMessage[2] + ":   \t" + splitMessage[3];
 		result += "\n  " + splitMessage[4] + ":   \t" + splitMessage[5];
 		if (splitMessage[3].equals(splitMessage[5])) {
-			result += "\n  It's a draw. There is no winner.";
+			result += "\n\n  It's a draw. There is no winner.";
 		} else {
-			result += "\n  " + splitMessage[2] + " is the winner! \n";
+			result += "\n\n  " + splitMessage[2] + " is the winner! ";
+			if (splitMessage[2].equals(clientName)) {
+				result += "You won! :)\n";
+			} else {
+				result += "You lost! :(\n";
+			}
+			
 		}
 		return result;
 	}
@@ -47,8 +59,7 @@ public class ClientMessages {
 	public static String startMessage(String msg) {
 		String[] splitMessage = msg.split("\\" + General.DELIMITER1);
 		if (splitMessage.length == 2) {
-			return "  Set your color and boardsize: (" + Client.SETTINGS
-					+ " <BLACK or WHITE> <boardsize in range (5,19)>)";
+			return "  Set your color and boardsize: (SET <B/W> <boardsize>)";
 		} else {
 			return "  The boardsize is " + splitMessage[3] + "x" + splitMessage[3]
 					+ " and your color is " + splitMessage[2] + ".";

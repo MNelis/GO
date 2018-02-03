@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.List;
 import game.online.GOGame;
 import general.Protocol.General;
+//import general.Protocol.General;
 import general.errors.OtherException;
 import server.ServerMessages;
 
@@ -22,8 +23,15 @@ public class GOServer {
 
 	/** Starts a Server-application. */
 	public static void main(String[] args) throws IOException {
-		GOServer server = new GOServer(General.DEFAULT_PORT);
-		server.run();
+		if (args.length == 0) {
+			GOServer server = new GOServer(General.DEFAULT_PORT);
+			server.run();
+		} else if (args[0].matches("\\d+")) {
+			GOServer server = new GOServer(Integer.parseInt(args[0]));
+			server.run();
+		} else {
+			System.err.println("ERROR INVALIDARGUMENTS ");
+		}
 	}
 
 	/** Constructs new GOServer instance for given port.
@@ -42,10 +50,14 @@ public class GOServer {
 			while (true) {
 				Socket sock = serverSocket.accept();
 				ClientHandler handler = new ClientHandler(this, sock);
-				handler.announce();
-				handler.start();
-				print(ServerMessages.newClientMessage(handler.getClientName()));
-				addToLobby(handler);
+				try {
+					handler.announce();
+					handler.start();
+					print(ServerMessages.newClientMessage(handler.getClientName()));
+					addToLobby(handler);
+				} catch (OtherException e) {
+					print(e.getMessage());
+				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -82,9 +94,7 @@ public class GOServer {
 	/** Removes client from lobby.
 	 * @param handler ClientHandler of the client. */
 	public void removeFromLobby(ClientHandler handler) {
-		if (lobby.contains(handler)) {
-			lobby.remove(handler);
-		}
+		lobby.remove(handler);
 	}
 
 	/** Adds client to requestedGame, removes from lobby and checks it enough
@@ -104,13 +114,8 @@ public class GOServer {
 	/** Removes client from requestedGame if on that list.
 	 * @param handler ClientHandler of the client.
 	 * @throws OtherException if client not on the list. */
-	public void removeRequestedGame(ClientHandler handler) throws OtherException {
-		if (requestedGames.contains(handler)) {
-			requestedGames.remove(handler);
-		} else {
-			throw new OtherException("You already revoked your request.");
-		}
-
+	public void removeRequestedGame(ClientHandler handler) {
+		requestedGames.remove(handler);
 	}
 
 	/** Adds client to inGame and removes it from requestedGame.
@@ -135,7 +140,7 @@ public class GOServer {
 		if (requestedGames.size() > 1) {
 			ClientHandler[] players = {requestedGames.get(0), requestedGames.get(1)};
 			print(ServerMessages.gameStartedMessage(players));
-			GOGame game = new GOGame(players[0], players[1]);
+			GOGame game = new GOGame(players[0], players[1], this);
 			for (ClientHandler p : players) {
 				p.setGame(game);
 				addInGame(p);
@@ -154,5 +159,14 @@ public class GOServer {
 		requestedGames.forEach(client -> clientNames.add(client.getClientName()));
 		inGame.forEach(client -> clientNames.add(client.getClientName()));
 		return clientNames.contains(clientName);
+	}
+
+	public void removeName(ClientHandler client) {
+		while (containsClientName(client.getClientName())) {
+			inGame.remove(client);
+			lobby.remove(client);
+			requestedGames.remove(client);
+		}
+
 	}
 }

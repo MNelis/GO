@@ -99,9 +99,10 @@ public class Board {
 	 * @return true if valid, false otherwise. */
 	public boolean isValid(int r, int c, Stone color) {
 		if (enabledHistory) {
-			return isNode(r, c) && isEmpty(r, c) && !isFull() && koRule(r, c, color);
+			return stonesLeft() && isNode(r, c) && isEmpty(r, c) && !isFull()
+					&& koRule(r, c, color);
 		} else {
-			return isNode(r, c) && isEmpty(r, c) && !isFull();
+			return stonesLeft() && isNode(r, c) && isEmpty(r, c) && !isFull();
 		}
 
 	}
@@ -149,14 +150,14 @@ public class Board {
 	/** Checks if both colors have stones left.
 	 * @return true if both color have stones left, false otherwise. */
 	public boolean stonesLeft() {
-		return numberStones[0] > 0 && numberStones[0] > 0;
+		return numberStones[0] > 0 && numberStones[1] > 0;
 	}
 
 	/** Adds a stone on a node.
 	 * @param r row.
 	 * @param c column.
 	 * @param color color of the stone. */
-	public void addStone(int r, int c, Stone color) {
+	public int addStone(int r, int c, Stone color) {
 		board[r][c] = color;
 		if (color.equals(Stone.BLACK)) {
 			numberStones[0] -= 1;
@@ -167,10 +168,11 @@ public class Board {
 			goGUI.addStone(c, r, color.equals(Stone.WHITE));
 		}
 		updateGroups(r, c, color);
-		checkCaptures(r, c, color);
+		int result = checkCaptures(r, c, color);
 		if (enabledHistory) {
 			history.add(deepCopy());
 		}
+		return result;
 	}
 
 	/** Updates the groups on the board around the added stone.
@@ -213,7 +215,8 @@ public class Board {
 	 * @param r row.
 	 * @param c column.
 	 * @param color color of the stone. */
-	public void checkCaptures(int r, int c, Stone color) {
+	public int checkCaptures(int r, int c, Stone color) {
+		int result = 0;
 		Integer[][] neighborStones = {{r - 1, c}, {r + 1, c}, {r, c - 1}, {r, c + 1}};
 		boolean capturesGroup = false;
 		for (Integer[] s : neighborStones) {
@@ -223,6 +226,7 @@ public class Board {
 					Group group = g.next();
 					if (group.containsStone(s) && group.getLiberties() == 0) {
 						capturesGroup = true;
+						result = 1;
 						removeGroup(group);
 						group.emptyList();
 						break;
@@ -235,12 +239,14 @@ public class Board {
 			while (g.hasNext()) {
 				Group group = g.next();
 				if (group.containsStone(r, c) && group.getLiberties() == 0) {
+					result = -1;
 					removeGroup(group);
 					group.emptyList();
 					break;
 				}
 			}
 		}
+		return result;
 	}
 
 	/** Removes a stone from a node.
@@ -319,7 +325,7 @@ public class Board {
 
 	/** Determines the scores of the players.
 	 * @return array with scores of BLACK and WHITE. */
-	public int[] determineScores() {
+	public int[] determineScores(boolean areaStones) {
 		int scoreBLACK = 0;
 		int scoreWHITE = 0;
 		for (int r = 0; r < dimension; r++) {
@@ -347,7 +353,7 @@ public class Board {
 		}
 		for (Area a : areas) {
 			if (a.getStoneArea()) {
-				if (enabledGUI) {
+				if (enabledGUI && areaStones) {
 					for (Integer[] i : a.getList()) {
 						goGUI.addAreaIndicator(i[1], i[0], a.getStone().equals(Stone.WHITE));
 					}
@@ -362,6 +368,11 @@ public class Board {
 		areas.removeAll(areas);
 		return new int[]{scoreBLACK, scoreWHITE};
 	}
+	
+	public int[] determineScores() {
+		return determineScores(false);
+	}
+	
 
 	/** Updates the areas.
 	 * @param r row.
@@ -411,13 +422,15 @@ public class Board {
 	 * @param dim dimension. */
 	public void setDimension(int dim) {
 		dimension = dim;
-		
+
 		board = new Stone[dimension][dimension];
 		for (int x = 0; x < dimension; x++) {
 			for (int y = 0; y < dimension; y++) {
 				board[x][y] = Stone.EMPTY;
 			}
 		}
+		numberStones[0] = (int) Math.ceil((dimension * dimension) / 2);
+		numberStones[1] = (int) Math.floor((dimension * dimension) / 2);
 		reset();
 		if (enabledGUI) {
 			goGUI.clearBoard();

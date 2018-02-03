@@ -13,6 +13,7 @@ import general.Protocol.Client;
 import general.Protocol.General;
 import general.Protocol.Server;
 import general.errors.IncompatibleProtocolException;
+import general.errors.InvalidMoveException;
 import general.errors.NameTakenException;
 import general.errors.OtherException;
 import general.errors.UnknownCommandException;
@@ -30,6 +31,7 @@ public class ClientHandler extends Thread {
 	private boolean inGame = false;
 	private boolean gameStarted = false;
 	private boolean currentTurn = false;
+	private boolean hasChat = false;
 
 	/** Constructs client handler.
 	 * @param server given server.
@@ -43,9 +45,16 @@ public class ClientHandler extends Thread {
 	}
 
 	/** Initiates connection with the client.
-	 * @throws IOException */
-	public void announce() throws IOException {
+	 * @throws IOException
+	 * @throws OtherException */
+	public void announce() throws IOException, OtherException {
+
+		sendMessage(Server.NAME + General.DELIMITER1 + "FrauNelis" + General.DELIMITER1
+				+ Server.VERSION + General.DELIMITER1 + Server.VERSIONNO + General.DELIMITER1
+				+ Server.EXTENSIONS + General.DELIMITER1 + "1$0$0$0$0$0$0");
+
 		String initialMessage = in.readLine();
+		server.print(initialMessage);
 		String[] splitMessage = initialMessage.split("\\" + General.DELIMITER1);
 
 		clientName = splitMessage[1];
@@ -63,15 +72,17 @@ public class ClientHandler extends Thread {
 			} else if (server.containsClientName(clientName)) {
 				throw new NameTakenException(ServerMessages.nameTakenError(clientName));
 			} else {
-				sendMessage(ServerMessages.welcomeMessage(clientName));
 				if (clientExtension[0].equals("1")) {
-					sendMessage(ServerMessages.CHATENABLEDMESSAGE);
+					hasChat = true;
 				}
 			}
 		} catch (IncompatibleProtocolException | NameTakenException e) {
+			server.print(e.getMessage());
 			sendMessage(e.getMessage());
 			disconnect();
+			throw new OtherException("Client couldnot connect.");
 		}
+
 	}
 
 	/** Starts reading and processing messages from client to server. */
@@ -81,7 +92,8 @@ public class ClientHandler extends Thread {
 			while (msg != null) {
 				try {
 					processInput(msg);
-				} catch (UnknownCommandException | OtherException e) {
+				} catch (UnknownCommandException | OtherException | InvalidMoveException e) {
+					server.print(clientName + ": " + e.getMessage());
 					sendMessage(e.getMessage());
 				}
 				msg = in.readLine();
@@ -89,12 +101,19 @@ public class ClientHandler extends Thread {
 			if (gameStarted) {
 				game.quit(this);
 			}
+			server.removeRequestedGame(this);
+			server.removeInGame(this);
+			server.removeFromLobby(this);
 			shutdown();
-		} catch (IOException e) {
+		} catch (IOException | OtherException e) {
 			if (gameStarted) {
 				game.quit(this);
 			}
-			shutdown();
+			try {
+				shutdown();
+			} catch (OtherException e1) {
+
+			}
 
 		}
 	}
@@ -110,11 +129,19 @@ public class ClientHandler extends Thread {
 	 * @param msg message. */
 	public void sendMessage(String msg) {
 		try {
-			out.write(msg);
-			out.newLine();
-			out.flush();
+			String[] split = msg.split("\\" + General.DELIMITER1);
+			if (!(!hasChat && split[0].equals(Server.CHAT))) {
+				out.write(msg);
+				out.newLine();
+				out.flush();
+			}
+
 		} catch (IOException e) {
-			shutdown();
+			try {
+				shutdown();
+			} catch (OtherException e1) {
+
+			}
 		}
 	}
 
@@ -142,8 +169,8 @@ public class ClientHandler extends Thread {
 		inGame = false;
 		gameStarted = false;
 		server.removeInGame(this);
+		server.addToLobby(this);
 		server.print(clientName + " left the game and returned to the lobby.");
-		sendMessage(ServerMessages.CHAT + "Welcome back in the lobby.");
 	}
 
 	/** Sets currentTurn to true while until client makes a move.
@@ -154,9 +181,10 @@ public class ClientHandler extends Thread {
 		currentTurn = false;
 	}
 
-	/** Tells server that client has left. */
-	private void shutdown() {
-		server.removeFromLobby(this);
+	/** Tells server that client has left.
+	 * @throws OtherException */
+	private void shutdown() throws OtherException {
+		server.removeName(this);
 		server.print(clientName + " has left.");
 	}
 
@@ -172,21 +200,23 @@ public class ClientHandler extends Thread {
 	/** Processes the input from client to server.
 	 * @param input input message.
 	 * @throws UnknownCommandException
-	 * @throws OtherException */
-	private void processInput(String input) throws UnknownCommandException, OtherException {
+	 * @throws OtherException
+	 * @throws InvalidMoveException */
+	private void processInput(String input)
+			throws UnknownCommandException, OtherException, InvalidMoveException {
 		String[] splitInput = input.split("\\" + General.DELIMITER1);
 
 		if (inGame && gameStarted) {
 			switch (splitInput[0]) {
 				case Client.CHAT:
 					if (input.length() > 4) {
+						server.print(clientName + " sends a chat message in game.");
 						game.sendChat(this, input.substring(5));
 					}
 					break;
 
 				case Client.EXIT:
 					game.quit(this);
-//					shutdown();
 					disconnect();
 					break;
 
@@ -205,30 +235,26 @@ public class ClientHandler extends Thread {
 					notifier();
 					break;
 
-				// case Client.SETTINGS:
-				// throw new OtherException("Settings are already set.");
-
 				default:
 					if (!input.equals("")) {
 						throw new UnknownCommandException();
 					}
-
 			}
 		} else if (inGame && !gameStarted) {
 			switch (splitInput[0]) {
 				case Client.CHAT:
 					if (input.length() > 4) {
+						server.print(clientName + " sends a chat message in game.");
 						game.sendChat(this, input.substring(5));
 					}
 					break;
 
 				case Client.EXIT:
-//					shutdown();
 					disconnect();
 					break;
 
-				// case Client.MOVE:
-				// throw new OtherException("Game has not started yet.");
+				case Client.MOVE:
+					throw new OtherException("Game has not started yet.");
 
 				case Client.QUIT:
 					server.print(clientName + "quits the game.");
@@ -257,24 +283,24 @@ public class ClientHandler extends Thread {
 					if (!input.equals("")) {
 						throw new UnknownCommandException();
 					}
-
 			}
 
 		} else {
 			switch (splitInput[0]) {
 				case Client.CHAT:
 					if (input.length() > 4) {
+						server.print(clientName + " sends a chat message in the lobby.");
 						server.broadcast(Client.CHAT + General.DELIMITER1 + this.getClientName()
 								+ General.DELIMITER1 + input.substring(5));
 					}
 					break;
 				case Client.EXIT:
-//					shutdown();
+					// shutdown();
 					disconnect();
 					break;
 
-				case Client.MOVE:
-					break;
+				// case Client.MOVE:
+				// break;
 
 				// case Client.QUIT:
 				// server.removeRequestedGame(this);
@@ -288,7 +314,9 @@ public class ClientHandler extends Thread {
 							&& splitInput[2].equals(Client.RANDOM)) {
 						server.print(ServerMessages.newRequestMessage(clientName));
 						server.addRequestedGame(this);
-						sendMessage(ServerMessages.REQUESTEDGAME);
+						if (hasChat) {
+							sendMessage(ServerMessages.REQUESTEDGAME);
+						}
 						break;
 					} else {
 						throw new UnknownCommandException("Unknown game request. ");

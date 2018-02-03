@@ -5,13 +5,16 @@ import game.model.Stone;
 import general.Protocol.Client;
 import general.Protocol.General;
 import general.Protocol.Server;
+import general.errors.InvalidMoveException;
 import general.errors.OtherException;
+import general.errors.UnknownCommandException;
 import server.ServerMessages;
 import server.model.ClientHandler;
+import server.model.GOServer;
 
 public class GOGame extends Thread {
 	private static final int NUMBEROFPLAYERS = 2;
-
+	private GOServer server;
 	private ClientHandler[] players = new ClientHandler[NUMBEROFPLAYERS];
 	private Stone[] colors = new Stone[NUMBEROFPLAYERS];
 	private Board board;
@@ -23,7 +26,8 @@ public class GOGame extends Thread {
 	/** Construct new GOGame with two players.
 	 * @param p1
 	 * @param p2 */
-	public GOGame(ClientHandler p1, ClientHandler p2) {
+	public GOGame(ClientHandler p1, ClientHandler p2, GOServer server) {
+		this.server = server;
 		players[0] = p1;
 		players[1] = p2;
 	}
@@ -35,8 +39,6 @@ public class GOGame extends Thread {
 			players[i].sendMessage(ServerMessages.CHAT + "You entered a game with "
 					+ players[(i + 1) % 2].getClientName() + ".");
 		}
-		broadcast(ServerMessages.CHAT
-				+ "Enter CHAT <your message> to sent a message to your opponent.");
 		players[0].sendMessage(startMsg0);
 		players[1].sendMessage(
 				ServerMessages.CHAT + "Waiting on the settings. These are determined by "
@@ -84,6 +86,10 @@ public class GOGame extends Thread {
 	/** Sends message to all player in the game.
 	 * @param msg message */
 	private void broadcast(String msg) {
+		try {
+			Thread.sleep(30);
+		} catch (InterruptedException e) {
+		}
 		for (ClientHandler p : players) {
 			p.sendMessage(msg);
 		}
@@ -151,33 +157,49 @@ public class GOGame extends Thread {
 	/** Broadcasts a move made by a player in correct format.
 	 * @param player player.
 	 * @param move move.
+	 * @throws UnknownCommandException
 	 * @throws OtherException */
-	public void makeMove(ClientHandler player, String move) throws OtherException {
+	public void makeMove(ClientHandler player, String move)
+			throws InvalidMoveException, UnknownCommandException {
 		String[] splitMove = move.split(General.DELIMITER2);
 		Stone color;
-		if (player.equals(players[0])) {
-			color = colors[0];
-		} else {
-			color = colors[1];
-		}
+		color = (player.equals(players[0])) ? colors[0] : colors[1];
+
 		if (splitMove[0].equals(Client.PASS)) {
 			board.increasePassCounter();
 			broadcast(Server.TURN + General.DELIMITER1 + player.getClientName() + General.DELIMITER1
 					+ Server.PASS + General.DELIMITER1 + other(player).getClientName());
+			server.print(player.getClientName() + " passed.");
 
 		} else if (splitMove[0].matches("\\d+") && splitMove[1].matches("\\d+")) {
-			if (board.isValid(Integer.parseInt(splitMove[0]), Integer.parseInt(splitMove[1]),
-					color)) {
+			int r = Integer.parseInt(splitMove[0]);
+			int c = Integer.parseInt(splitMove[1]);
+
+			if (board.isValid(r, c, color)) {
+				board.addStone(r, c, color);
+				board.resetPassCounter();
+				server.print(player.getClientName() + " added a " + color + " stone on (" + r + ","
+						+ c + ").");
 				broadcast(Server.TURN + General.DELIMITER1 + player.getClientName()
 						+ General.DELIMITER1 + move + General.DELIMITER1
 						+ other(player).getClientName());
-				int x = Integer.parseInt(splitMove[0]);
-				int y = Integer.parseInt(splitMove[1]);
-				board.addStone(x, y, color);
-				board.resetPassCounter();
+
 			} else {
-				throw new OtherException(ServerMessages.INVALIDMOVE);
+				String cause = "";
+				if (!board.isNode(r, c)) {
+					cause = " is not a node.";
+				} else if (!board.isEmpty(r, c)) {
+					cause = " is not an empty node.";
+				} else if (!board.stonesLeft()) {
+					cause = " is not valid, because there are no stones left.";
+				} else if (!board.koRule(r, c, color)) {
+					cause = " is not valid due to the ko rule.";
+				}
+
+				throw new InvalidMoveException("(" + r + "," + c + ")" + cause);
 			}
+		} else {
+			throw new UnknownCommandException();
 		}
 	}
 

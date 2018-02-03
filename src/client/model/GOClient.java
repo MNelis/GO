@@ -12,9 +12,14 @@ import client.viewer.ClientView;
 import client.viewer.GOClientTUI;
 import game.model.Board;
 import game.model.Stone;
+//import game.players.BasicStrategy;
+//import game.players.BetterStrategy;
+import game.players.BettererStrategy;
+import game.players.NotBetterStrategy;
 import game.players.ComputerPlayer;
-import game.players.NaiveStrategy;
+//import game.players.NaiveStrategy;
 import game.players.Player;
+import client.ClientMenu;
 import client.ClientMessages;
 import general.Protocol.Client;
 import general.Protocol.General;
@@ -24,31 +29,36 @@ import general.errors.OtherException;
 import general.errors.UnknownCommandException;
 
 public class GOClient extends Thread {
-	private static final String USAGE = "Usage : " + GOClient.class.getName() + " <name> <address>";
-	private static final String STARTAI = "STARTAI";
-	private static final String ENDCAI = "ENDAI";
+	private static final String USAGE = "Usage : " + GOClient.class.getName()
+			+ " <name> <address> <port>";
+	// private static final String STARTAI = "STARTAI";
+	// private static final String ENDCAI = "ENDAI";
 
 	/** Starts the client application and connects to server.
 	 * @param args */
 	public static void main(String[] args) {
-		if (args.length != 2) {
+		int port = 0;
+		if (args.length == 3 && args[2].matches("\\d+")) {
+			port = Integer.parseInt(args[2]);
+		} else if (args.length > 3 || args.length < 2) {
 			System.out.println(USAGE);
 			System.exit(0);
+		} else {
+			port = General.DEFAULT_PORT;
 		}
 		InetAddress host = null;
-		int port = 0;
+
 		try {
 			host = InetAddress.getByName(args[1]);
 		} catch (UnknownHostException e) {
 			System.err.println("ERROR: invalid hostname.");
 			System.exit(0);
 		}
-		try {
-			port = General.DEFAULT_PORT;
-		} catch (NumberFormatException e) {
-			System.err.println("ERROR: invalid defeault portnumber.");
-			System.exit(0);
-		}
+		// try {
+		// } catch (NumberFormatException e) {
+		// System.err.println("ERROR: invalid default port number.");
+		// System.exit(0);
+		// }
 		try {
 			GOClient client = new GOClient(args[0], host, port);
 			client.sendMessage(ClientMessages.initMessage(args[0]));
@@ -69,6 +79,8 @@ public class GOClient extends Thread {
 	private Stone stone;
 	private Player computerPlayer;
 	private boolean humanPlayer = true;
+	private boolean inGame = false;
+	private boolean hasChat = false;
 
 	/** Constructs new client with TUI.
 	 * @param name name of the client.
@@ -107,7 +119,7 @@ public class GOClient extends Thread {
 			out.flush();
 		} catch (IOException e) {
 			shutdown();
-		} catch (InvalidMoveException | OtherException e) {
+		} catch (InvalidMoveException | OtherException | UnknownCommandException e) {
 			error(ClientMessages.errorMessage(e.getMessage()));
 		}
 	}
@@ -143,13 +155,33 @@ public class GOClient extends Thread {
 	private String processInput(String msg) throws InterruptedException {
 		String[] splitMessage = msg.split("\\" + General.DELIMITER1);
 		switch (splitMessage[0]) {
+			case Server.NAME:
+				print("  Welcome " + clientName + ", you connected to " + splitMessage[1] + ".\n");
+				if (splitMessage[5].equals("1")) {
+					hasChat = true;
+					print(ClientMenu.LOBBYMENU);
+				} else {
+					print(ClientMenu.CLOBBYMENU);
+				}
+
+				return "";
+
 			case Server.CHAT:
 				return ClientMessages.chatMessage(msg);
 
 			case Server.ENDGAME:
-				board.determineScores();
+				board.determineScores(true);
 				board.quitGame();
-				return ClientMessages.endGameMessage(msg);
+				inGame = false;
+				print(ClientMessages.endGameMessage(msg, clientName));
+				Thread.sleep(30);
+				if (hasChat) {
+					print(ClientMenu.LOBBYMENU);
+				} else {
+					print(ClientMenu.CLOBBYMENU);
+				}
+
+				return "";
 
 			case Server.ERROR:
 				error(ClientMessages.errorMessage(msg));
@@ -159,19 +191,26 @@ public class GOClient extends Thread {
 				String result = "";
 				if (!(splitMessage.length == 2)) {
 					startGame(splitMessage[3]);
+					inGame = true;
+					if (hasChat) {
+						print(ClientMenu.GAMEMENU);
+					} else {
+						print(ClientMenu.CGAMEMENU);
+					}
 					if (splitMessage[2].equals(General.BLACK)) {
 						stone = Stone.BLACK;
-						computerPlayer = new ComputerPlayer(stone, new NaiveStrategy());
+						computerPlayer = new ComputerPlayer(stone, new BettererStrategy());
 						result = ClientMessages.startMessage(msg);
 						// }
 					} else {
 						stone = Stone.WHITE;
-						computerPlayer = new ComputerPlayer(stone, new NaiveStrategy());
+						computerPlayer = new ComputerPlayer(stone, new NotBetterStrategy());
 						result = ClientMessages.startMessage(msg);
 					}
 
 				} else {
-					result = ClientMessages.startMessage(msg);
+					print(ClientMessages.startMessage(msg));
+					result = "";
 				}
 				return result;
 
@@ -192,7 +231,7 @@ public class GOClient extends Thread {
 				}
 				if (splitMessage[3].equals(getClientName()) && !humanPlayer) {
 					return ClientMessages.turnMessage(msg, splitMessage[3].equals(clientName),
-							humanPlayer) + "\n" + determineMoveAI(board);
+							humanPlayer) + determineMoveAI(board);
 				} else {
 					return ClientMessages.turnMessage(msg, splitMessage[3].equals(clientName),
 							humanPlayer);
@@ -208,46 +247,123 @@ public class GOClient extends Thread {
 	 * @param msg the message provided by the client.
 	 * @return a adjusted message.
 	 * @throws InvalidMoveException
-	 * @throws OtherException */
-	private String processOutput(String msg) throws InvalidMoveException, OtherException {
+	 * @throws OtherException
+	 * @throws UnknownCommandException */
+	private String processOutput(String msg)
+			throws InvalidMoveException, OtherException, UnknownCommandException {
 		String[] splitMessage = msg.split(" ");
-		switch (splitMessage[0]) {
-			case Client.CHAT:
-				return msg.replaceFirst(" ", "\\" + General.DELIMITER1);
+		switch (splitMessage[0].toUpperCase()) {
+			case "0":
+				if (msg.length() > 2) {
+					return Client.CHAT + General.DELIMITER1 + msg.substring(2);
+				} else {
+					return Client.CHAT + General.DELIMITER1 + " ";
+				}
+
+			case "1":
+				if (msg.length() < 3) {
+					if (!inGame) {
+						return ClientMessages.REQUESTGAME;
+					} else {
+						return Client.QUIT;
+					}
+				} else {
+					throw new UnknownCommandException();
+				}
+
+			case "2":
+				if (msg.length() < 3) {
+					if (humanPlayer) {
+						humanPlayer = false;
+						print("  Activated the computer player.");
+					} else {
+						humanPlayer = true;
+						print("  Deactivated the computer player.");
+					}
+					return "";
+				} else {
+					throw new OtherException("Command too long.");
+				}
+
+			case "3":
+				if (msg.length() < 3) {
+					return Client.EXIT;
+				} else {
+					throw new UnknownCommandException();
+				}
+
+			case "HELP":
+				if (hasChat) {
+					print(ClientMenu.HELPMENU);
+				} else {
+					print(ClientMenu.CHELPMENU);
+				}
+
+				return "";
+
 			case Client.MOVE:
+				if (inGame) {
+					if (splitMessage.length == 2
+							&& (splitMessage[1].toUpperCase()).equals(Client.PASS)) {
+						return Client.MOVE + General.DELIMITER1 + Client.PASS;
+						// return msg.replace(" ", General.DELIMITER1);
+					} else if (splitMessage.length == 3 && (splitMessage[1].matches("\\d+")
+							&& splitMessage[2].matches("\\d+"))) {
+						int r = Integer.parseInt(splitMessage[1]);
+						int c = Integer.parseInt(splitMessage[2]);
+						if (board.isValid(r, c, stone)) {
 
-				if (splitMessage.length == 2 && splitMessage[1].equals(Client.PASS)) {
-					return msg.replace(" ", General.DELIMITER1);
-				} else if (splitMessage.length == 3
-						&& (splitMessage[1].matches("\\d+") && splitMessage[2].matches("\\d+"))
-						&& board.isValid(Integer.parseInt(splitMessage[1]),
-								Integer.parseInt(splitMessage[2]), stone)) {
-					return ((msg.replaceFirst(" ", "\\" + General.DELIMITER1)).replaceFirst(" ",
-							General.DELIMITER2)).replace(" ", General.DELIMITER1);
+							return Client.MOVE + General.DELIMITER1 + splitMessage[1]
+									+ General.DELIMITER2 + splitMessage[2];
+						} else {
+							String cause = "";
+							if (!board.isNode(r, c)) {
+								cause = " is not a node.";
+							} else if (!board.isEmpty(r, c)) {
+								cause = " is not an empty node.";
+							} else if (!board.stonesLeft()) {
+								cause = " is not valid, because there are no stones left.";
+							} else if (!board.koRule(r, c, stone)) {
+								cause = " is not valid due to the ko rule.";
+							}
+							throw new InvalidMoveException("(" + r + "," + c + ")" + cause);
+						}
+
+						// return ((msg.replaceFirst(" ", "\\" + General.DELIMITER1)).replaceFirst("
+						// ",
+						// General.DELIMITER2)).replace(" ", General.DELIMITER1);
+					} else {
+						return "??";
+						// throw new InvalidMoveException("Invalid move. Try something else.");
+					}
 				} else {
-					throw new InvalidMoveException("Invalid move. Try something else.");
+					throw new OtherException("You cannot made moves outside a game.");
 				}
 
-			case Client.REQUESTGAME:
-				return ClientMessages.REQUESTGAME;
+			case "SET":
+				if (msg.length() > 4) {
+					if ((splitMessage[1].toUpperCase()).equals("W")
+							&& splitMessage[2].matches("\\d+")) {
+						return Client.SETTINGS + General.DELIMITER1 + General.WHITE
+								+ General.DELIMITER1 + splitMessage[2];
+					} else if ((splitMessage[1].toUpperCase()).equals("B")
+							&& splitMessage[2].matches("\\d+")) {
+						return Client.SETTINGS + General.DELIMITER1 + General.BLACK
+								+ General.DELIMITER1 + splitMessage[2];
+					} else {
+						throw new UnknownCommandException();
+					}
 
-			case STARTAI:
-				if (humanPlayer) {
-					humanPlayer = false;
-					print("  Activated the computer player.\n  Enter ENDAI to deactivate it.");
 				} else {
-					throw new OtherException("You already activated the computer player.");
+					throw new UnknownCommandException();
 				}
-				return "";
 
-			case ENDCAI:
-				if (!humanPlayer) {
-					humanPlayer = true;
-					print("  Deactivated the computer player.\n  Enter STARTAI to reactivate it.");
+			case Client.SETTINGS:
+				if (msg.length() > 4) {
+					return Client.SETTINGS + (msg.substring(3)).replace(" ", General.DELIMITER1);
 				} else {
-					throw new OtherException("You already deactivated the computer player.");
+					throw new UnknownCommandException();
 				}
-				return "";
 
 			default:
 				return msg.replace(" ", General.DELIMITER1);
@@ -280,10 +396,10 @@ public class GOClient extends Thread {
 		Integer[] move = computerPlayer.determineMove(b);
 		if (move[2] == -1) {
 			sendMessage("MOVE PASS");
-			return "  The computer passed:";
+			return " ";
 		} else {
 			sendMessage("MOVE " + move[0] + " " + move[1]);
-			return "  The computer made a move.";
+			return "";
 		}
 	}
 
@@ -308,8 +424,8 @@ public class GOClient extends Thread {
 		return computerPlayer;
 	}
 
-	/** Gets TUI. 
-	 * @return goTUI.*/
+	/** Gets TUI.
+	 * @return goTUI. */
 	private ClientView getTUI() {
 		return goTUI;
 	}
