@@ -8,7 +8,7 @@ version 1.3
 
 ### Start a client
 For each new client:
-- Open command prompt in the folder target.
+- Open command prompt at the location of the `GO-v1.3.jar`-file.
 - Enter `java -cp GO-v1.3.jar client.model.GOClient <name> <host address> <port number>`
 - If no port number is entered, the default port is used: 5647.
 
@@ -31,6 +31,7 @@ When a client starts a **game**, a menu is shown with the following commands:
 - `2` to activate/deactivate the computer player.
 - `3` to disconnect and close the client application.
 - `HELP` to show the menu.
+
 Furthermore, moves are made with the following commands.
 - `MOVE <row> <column>` to place a stone on (row,column).
 - `MOVE PASS` to pass your turn.
