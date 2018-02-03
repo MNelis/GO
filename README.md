@@ -34,5 +34,3 @@ When a client starts a **game**, a menu is shown with the following commands:
 Furthermore, moves are made with the following commands.
 - `MOVE <row> <column>` to place a stone on (row,column).
 - `MOVE PASS` to pass your turn.
-
-
